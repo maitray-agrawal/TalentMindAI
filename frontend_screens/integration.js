@@ -539,7 +539,7 @@ async function loadRankings(jobId) {
         // If rankings are empty, trigger calculation backend pipeline
         if (rankings.length === 0) {
             showToast('Initializing ranking calculations...', 'info');
-            const calcRes = await fetch(`${API_BASE}/ranking/rank?job_id=${jobId}`, { method: 'POST' });
+            const calcRes = await fetch(`${API_BASE}/ranking/rank/${jobId}`, { method: 'POST' });
             if (calcRes.ok) {
                 rankingsRes = await fetch(`${API_BASE}/ranking/job/${jobId}`);
                 rankings = await rankingsRes.json();
