@@ -17,7 +17,8 @@ from app.schemas.candidate import CandidateCreate, CandidateUpdate
 from app.schemas.job import JobCreate
 from app.routes.candidates import create_candidate, read_candidates, read_candidate, update_candidate, delete_candidate
 from app.routes.jobs import create_job, read_jobs, read_job
-from app.routes.ranking import calculate_job_rankings, get_job_rankings, get_candidate_skill_gap
+from app.routes.ranking import calculate_job_rankings, get_job_rankings, get_candidate_skill_gap, generate_ranking
+from app.schemas.ranking import RankingGenerateRequest
 from app.routes.copilot import chat_with_copilot, ChatRequest
 from app.services.jd_analyzer import JDAnalyzerService
 from app.services.ranker_service import RankerService
@@ -153,6 +154,24 @@ class DirectBackendTestCase(unittest.TestCase):
         self.assertIn("response", result)
         self.assertIn("email_draft", result)
         self.assertIn("Elena", result["email_draft"])
+
+    def test_6_generate_ranking_route(self):
+        req = RankingGenerateRequest(
+            job_description="Looking for a Senior Frontend Engineer with 5+ years experience. Required skills: React, TypeScript, Next.js, Git. Location: London, Hybrid.",
+            limit=5
+        )
+        ranked = generate_ranking(req=req, db=self.db)
+        self.assertGreaterEqual(len(ranked), 1)
+        
+        # Verify the structure and values
+        top_cand = ranked[0]
+        self.assertEqual(top_cand.rank, 1)
+        self.assertEqual(top_cand.candidate_name, "Elena Rodriguez")
+        self.assertGreater(top_cand.score, 50.0)
+        self.assertIn("React", top_cand.reasoning)
+        self.assertIn("TypeScript", top_cand.reasoning)
+
+
 
 if __name__ == "__main__":
     unittest.main()

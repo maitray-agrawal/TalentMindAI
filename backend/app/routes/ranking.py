@@ -1,13 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Any
 from app.database import get_db
 from app.models.candidate import Candidate
 from app.models.job import Job
 from app.models.ranking import Ranking
-from app.schemas.ranking import RankingWithCandidate, SkillGapResponse
+from app.schemas.ranking import (
+    RankingWithCandidate, 
+    SkillGapResponse, 
+    RankingGenerateRequest, 
+    CandidateRankResponse
+)
 from app.services.ranker_service import RankerService
 from app.services.copilot_service import CopilotService
+from app.services.jd_analyzer import JDAnalyzerService
+
 
 router = APIRouter(prefix="/ranking", tags=["Ranking"])
 
@@ -114,3 +121,64 @@ def get_candidate_skill_gap(candidate_id: int, job_id: int, db: Session = Depend
         experience_gap_years=max(0.0, float(job.experience_required or 0.0) - float(candidate.experience_years or 0.0)),
         upskilling_roadmap=roadmap
     )
+
+@router.post("/generate", response_model=List[CandidateRankResponse])
+def generate_ranking(req: RankingGenerateRequest, db: Session = Depends(get_db)):
+    # 1. Analyze the job description
+    analysis = JDAnalyzerService.analyze_detailed(req.job_description)
+    
+    # 2. Create a temporary in-memory Job object
+    temp_job = Job(
+        title=analysis.get("title") or "Untitled Role",
+        description=analysis.get("description") or req.job_description,
+        required_skills=analysis.get("required_skills") or [],
+        experience_required=float(analysis.get("experience_required") or 0.0),
+        work_preference=analysis.get("work_preference") or "Remote",
+        location=analysis.get("location") or "Remote"
+    )
+
+    # 3. Rank candidates against this job
+    candidates = db.query(Candidate).all()
+    if not candidates:
+        return []
+
+    ranked_results = []
+    for candidate in candidates:
+        score, explanation, tier = RankerService.calculate_match(candidate, temp_job)
+        
+        # 4. Generate ranking explanation reasoning
+        matched_skills_str = ", ".join(explanation.get("matched_skills", [])) if explanation.get("matched_skills") else "None"
+        missing_skills_str = ", ".join(explanation.get("missing_skills", [])) if explanation.get("missing_skills") else "None"
+        
+        reasoning = (
+            f"Candidate matches {len(explanation.get('matched_skills', []))} out of {len(explanation.get('matched_skills', [])) + len(explanation.get('missing_skills', []))} required skills. "
+            f"Matched skills: {matched_skills_str}. "
+            f"Missing skills: {missing_skills_str}. "
+            f"Candidate has {candidate.experience_years or 0.0} years of experience (Required: {temp_job.experience_required or 0.0} years). "
+            f"Location / preference fit: {candidate.location or 'Not Specified'} ({candidate.work_preference or 'Remote'}) vs job's {temp_job.location or 'Not Specified'} ({temp_job.work_preference or 'Remote'}). "
+            f"Fit Score details: Skills {explanation.get('skills_score') or 0.0}%, Experience {explanation.get('experience_score') or 0.0}%, Text Sim {explanation.get('text_similarity_score') or 0.0}%, Location {explanation.get('location_score') or 0.0}%."
+        )
+
+        ranked_results.append({
+            "candidate_id": candidate.id,
+            "candidate_uuid": candidate.candidate_id,
+            "candidate_name": candidate.name,
+            "score": score,
+            "reasoning": reasoning
+        })
+
+    # 5. Sort candidates by score descending
+    ranked_results.sort(key=lambda x: x["score"], reverse=True)
+
+    # 6. Assign ranks
+    final_results = []
+    for idx, res in enumerate(ranked_results):
+        res["rank"] = idx + 1
+        final_results.append(CandidateRankResponse(**res))
+
+    # Apply limit if specified
+    if req.limit is not None and req.limit > 0:
+        final_results = final_results[:req.limit]
+
+    return final_results
+

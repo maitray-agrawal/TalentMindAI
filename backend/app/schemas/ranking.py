@@ -31,3 +31,16 @@ class SkillGapResponse(BaseModel):
     missing_skills: List[str]
     experience_gap_years: float
     upskilling_roadmap: List[Dict[str, Any]]
+
+class RankingGenerateRequest(BaseModel):
+    job_description: str
+    limit: Optional[int] = None
+
+class CandidateRankResponse(BaseModel):
+    candidate_id: int
+    candidate_uuid: Optional[str] = None
+    candidate_name: str
+    score: float
+    reasoning: str
+    rank: int
+

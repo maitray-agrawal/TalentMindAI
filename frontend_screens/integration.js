@@ -483,6 +483,7 @@ async function initCandidateRanking() {
         const res = await fetch(`${API_BASE}/jobs`);
         if (!res.ok) return;
         const jobs = await res.json();
+        window.allJobs = jobs;
         
         // Populate dropdown
         select.innerHTML = '<option value="">-- Choose an Open Role --</option>';
@@ -523,7 +524,7 @@ async function loadRankings(jobId) {
 
     container.innerHTML = `
         <tr>
-            <td colspan="5" class="py-12 text-center text-outline">
+            <td colspan="6" class="py-12 text-center text-outline">
                 <span class="material-symbols-outlined animate-spin text-3xl mb-2">sync</span>
                 <p>Retrieving AI match score calculations...</p>
             </td>
@@ -550,7 +551,7 @@ async function loadRankings(jobId) {
         if (rankings.length === 0) {
             container.innerHTML = `
                 <tr>
-                    <td colspan="5" class="py-12 text-center text-outline">
+                    <td colspan="6" class="py-12 text-center text-outline">
                         <span class="material-symbols-outlined text-3xl mb-2 font-bold text-error">error</span>
                         <p>No candidates available in the pool to rank.</p>
                     </td>
@@ -564,43 +565,68 @@ async function loadRankings(jobId) {
 
         rankings.forEach((r, index) => {
             const score = Math.round(r.match_score);
-            const scoreColor = score >= 85 ? 'text-tertiary border-tertiary' : score >= 70 ? 'text-primary border-primary' : 'text-outline border-white/20';
-            const progressColor = score >= 85 ? 'bg-tertiary' : score >= 70 ? 'bg-primary' : 'bg-outline';
-
+            const scoreColor = score >= 85 ? 'text-primary' : score >= 70 ? 'text-primary' : 'text-on-surface-variant';
+            
             if (isTable) {
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-white/[0.02] border-b border-white/5';
+                tr.className = 'group hover:bg-white/5 transition-all duration-300 border-b border-white/5';
+                
+                // Technical Excellence tags
+                const matchedSkills = r.explanation?.matched_skills || [];
+                const skillsHTML = matchedSkills.length > 0 
+                    ? matchedSkills.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold border border-primary/20">${s}</span>`).join('')
+                    : '<span class="text-xs text-on-surface-variant/60">No skill overlap</span>';
+
+                // Cultural Synergy percentage
+                const locScore = Math.round(r.explanation?.location_score || 0);
+
                 tr.innerHTML = `
-                    <td class="p-6 font-mono-data text-center font-bold text-lg text-outline/50">#${index + 1}</td>
-                    <td class="p-6">
-                        <div class="flex items-center gap-3">
-                            <img class="w-10 h-10 rounded-lg object-cover" src="${r.candidate.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBT0NpLK060VPqvHHfKqSM591wQsyX0wC7wEB5wvoRdsoRdamqgXYFH0gJhUHdvQWx5cE4HgWiGNUWWq3xepl4KCzThVL1MpNTOPjQ1NBKYbfRWoT8186Bdbu8pctaSA8gVo4tENwDGlYfp6Yq8Wc8FJA2uDuojrf4FpbNU_GSiYDr_s0f4MJDu73q04MOFgQK7LvTSIY-r4qb-lJCDFElsS1zQCpCIcdnpNzPx8ITAxy7cISBR_J2BKBoZrpcFuTb3Iwz7Bjr4NfAI'}" alt=""/>
+                    <td class="px-6 py-6">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-full ${index === 0 ? 'bg-primary/20 text-primary' : 'bg-white/5 text-on-surface-variant'} font-black text-label-sm">${String(index + 1).padStart(2, '0')}</div>
+                    </td>
+                    <td class="px-6 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="relative">
+                                <img class="w-12 h-12 rounded-2xl object-cover" src="${r.candidate.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBT0NpLK060VPqvHHfKqSM591wQsyX0wC7wEB5wvoRdsoRdamqgXYFH0gJhUHdvQWx5cE4HgWiGNUWWq3xepl4KCzThVL1MpNTOPjQ1NBKYbfRWoT8186Bdbu8pctaSA8gVo4tENwDGlYfp6Yq8Wc8FJA2uDuojrf4FpbNU_GSiYDr_s0f4MJDu73q04MOFgQK7LvTSIY-r4qb-lJCDFElsS1zQCpCIcdnpNzPx8ITAxy7cISBR_J2BKBoZrpcFuTb3Iwz7Bjr4NfAI'}" alt=""/>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-tertiary rounded-full border-2 border-surface shadow-lg"></div>
+                            </div>
                             <div>
-                                <p class="font-bold text-on-surface hover:text-primary cursor-pointer" onclick="window.location.href='candidate_details.html?id=${r.candidate_id}&job_id=${jobId}'">${r.candidate.name}</p>
-                                <p class="text-xs text-on-surface-variant/60">${r.candidate.title}</p>
+                                <h4 class="font-bold text-on-surface text-body-md hover:text-primary cursor-pointer" onclick="window.location.href='candidate_details.html?id=${r.candidate_id}&job_id=${jobId}'">${r.candidate.name}</h4>
+                                <p class="text-on-surface-variant/60 text-[12px]">${r.candidate.title}</p>
                             </div>
                         </div>
                     </td>
-                    <td class="p-6">
+                    <td class="px-6 py-6">
+                        <div class="flex justify-center">
+                            <div class="relative h-14 w-14 flex items-center justify-center">
+                                <svg class="h-full w-full -rotate-90">
+                                    <circle cx="28" cy="28" fill="transparent" r="24" stroke="rgba(255,255,255,0.05)" stroke-width="4"></circle>
+                                    <circle class="${scoreColor}" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150" stroke-dashoffset="${150 - (150 * score / 100)}" stroke-width="4"></circle>
+                                </svg>
+                                <span class="absolute text-[12px] font-bold ${scoreColor}">${score}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-6">
+                        <div class="flex flex-wrap gap-2 max-w-xs">
+                            ${skillsHTML}
+                        </div>
+                    </td>
+                    <td class="px-6 py-6">
                         <div class="flex items-center gap-2">
-                            <div class="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                                <div class="h-full ${progressColor}" style="width: ${score}%"></div>
+                            <div class="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-tertiary" style="width: ${locScore}%"></div>
                             </div>
-                            <span class="text-xs font-bold ${scoreColor.split(' ')[0]}">${score}%</span>
+                            <span class="text-tertiary font-mono-data text-[12px]">${locScore}%</span>
                         </div>
                     </td>
-                    <td class="p-6 text-center text-xs text-on-surface-variant/80 max-w-xs truncate">
-                        ${r.explanation || 'Analyzed successfully.'}
-                    </td>
-                    <td class="p-6 text-center">
-                        <div class="flex gap-2 justify-center">
-                            <button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-bold" onclick="window.location.href='skill_gap_analysis.html?id=${r.candidate_id}&job_id=${jobId}'">
-                                Skill Gap
-                            </button>
-                            <button class="px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-xs text-on-surface-variant" onclick="updateCandidateStatus(${r.candidate_id}, 'Interview')">
-                                Interview
-                            </button>
-                        </div>
+                    <td class="px-6 py-6 text-right">
+                        <button class="px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-label-sm hover:scale-105 transition-transform active:scale-95 ai-glow mr-2" onclick="window.location.href='skill_gap_analysis.html?id=${r.candidate_id}&job_id=${jobId}'">
+                            Skill Gap
+                        </button>
+                        <button class="px-4 py-2 border border-white/10 hover:bg-white/5 rounded-xl font-bold text-label-sm transition-transform active:scale-95" onclick="updateCandidateStatus(${r.candidate_id}, 'Interview')">
+                            Interview
+                        </button>
                     </td>
                 `;
                 container.appendChild(tr);
@@ -623,7 +649,7 @@ async function loadRankings(jobId) {
                     <div class="flex items-center gap-6">
                         <div class="text-right">
                             <p class="text-xs text-outline">Match Score</p>
-                            <p class="text-2xl font-bold ${scoreColor.split(' ')[0]}">${score}%</p>
+                            <p class="text-2xl font-bold text-primary">${score}%</p>
                         </div>
                         <div class="flex flex-col gap-2">
                             <button class="px-4 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-bold" onclick="window.location.href='skill_gap_analysis.html?id=${r.candidate_id}&job_id=${jobId}'">
