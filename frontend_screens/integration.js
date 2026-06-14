@@ -842,24 +842,27 @@ async function loadSkillGapSection(candId, jobId) {
 async function initCandidateComparison() {
     const urlParams = new URLSearchParams(window.location.search);
     const candidateIds = urlParams.get('candidates') || '1,2,5';
-    const jobId = urlParams.get('job_id') || '1';
+    const jobId = urlParams.get('job_id') || null;
 
-    const ids = candidateIds.split(',');
+    const ids = candidateIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
     const container = document.querySelector('main .grid');
-    if (!container) return;
+    if (!container || ids.length === 0) return;
 
     try {
-        const cPromises = ids.map(id => fetch(`${API_BASE}/candidates/${id}`).then(res => res.json()));
-        const candidates = await Promise.all(cPromises);
+        // Call the new comparison endpoint
+        const comparisonUrl = `${API_BASE}/candidates/compare?candidate_ids=${ids.join(',')}&job_id=${jobId || ''}`;
+        const compRes = await fetch(comparisonUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-        // Fetch rankings to extract match scores & sentiments
-        let rankings = [];
-        try {
-            const rRes = await fetch(`${API_BASE}/ranking/job/${jobId}`);
-            if (rRes.ok) rankings = await rRes.json();
-        } catch (e) {
-            console.error("Could not fetch rankings for comparison", e);
+        if (!compRes.ok) {
+            console.error("Comparison API failed:", compRes.status);
+            return;
         }
+
+        const comparisonData = await compRes.json();
+        const { candidates, summary } = comparisonData;
 
         // Build comparison structure
         // Grid: col-1 is header/label, other cols are candidates
@@ -874,13 +877,23 @@ async function initCandidateComparison() {
         `;
         container.appendChild(headerLabel);
 
-        candidates.forEach(c => {
-            const ranking = rankings.find(r => r.candidate_id === c.id);
-            const score = ranking ? Math.round(ranking.match_score) : 75;
+        // Render candidate headers with scores and recommendations
+        candidates.forEach((c, idx) => {
+            const score = Math.round(c.ranking.score || 75);
+            const recLevel = c.recommendation.level;
+            const isRecommended = recLevel === 'Strong Hire';
             
             const card = document.createElement('div');
             card.className = 'p-8 border-b border-white/5 border-l border-white/5 relative';
-            card.innerHTML = `
+            if (isRecommended) {
+                card.innerHTML = `
+                    <div class="absolute top-4 right-4 bg-primary-container text-white px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase flex items-center gap-1 shadow-lg shadow-primary/30">
+                        <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+                        Recommended
+                    </div>
+                `;
+            }
+            card.innerHTML += `
                 <div class="flex flex-col items-center text-center">
                     <div class="relative mb-4">
                         <img class="w-24 h-24 rounded-2xl object-cover ring-4 ring-primary/20" src="${c.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBT0NpLK060VPqvHHfKqSM591wQsyX0wC7wEB5wvoRdsoRdamqgXYFH0gJhUHdvQWx5cE4HgWiGNUWWq3xepl4KCzThVL1MpNTOPjQ1NBKYbfRWoT8186Bdbu8pctaSA8gVo4tENwDGlYfp6Yq8Wc8FJA2uDuojrf4FpbNU_GSiYDr_s0f4MJDu73q04MOFgQK7LvTSIY-r4qb-lJCDFElsS1zQCpCIcdnpNzPx8ITAxy7cISBR_J2BKBoZrpcFuTb3Iwz7Bjr4NfAI'}" alt=""/>
@@ -889,10 +902,10 @@ async function initCandidateComparison() {
                         </div>
                     </div>
                     <h3 class="font-headline-md text-on-surface text-lg font-bold">${c.name}</h3>
-                    <p class="text-on-surface-variant/70 text-xs">${c.title}</p>
+                    <p class="text-on-surface-variant/70 text-xs">${c.title || 'Not specified'}</p>
                     <p class="text-[10px] text-tertiary font-bold mt-2 flex items-center justify-center gap-1">
                         <span class="w-1.5 h-1.5 bg-tertiary rounded-full status-dot"></span>
-                        MATCH: ${score >= 85 ? 'HIGH' : score >= 70 ? 'POTENTIAL' : 'MODERATE'}
+                        ${c.ranking.tier}
                     </p>
                 </div>
             `;
@@ -905,15 +918,18 @@ async function initCandidateComparison() {
         expLabel.innerHTML = `
             <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined text-primary-fixed">work</span>
-                <span class="font-bold text-on-surface">Total Experience</span>
+                <span class="font-bold text-on-surface">Experience</span>
             </div>
         `;
         container.appendChild(expLabel);
 
         candidates.forEach(c => {
             const expCell = document.createElement('div');
-            expCell.className = 'p-8 border-b border-white/5 border-l border-white/5 flex items-center justify-center font-mono-data text-headline-md text-on-surface';
-            expCell.textContent = `${c.experience_years} Years`;
+            expCell.className = 'p-8 border-b border-white/5 border-l border-white/5 flex flex-col items-center justify-center font-mono-data text-headline-md text-on-surface';
+            expCell.innerHTML = `
+                <div class="text-2xl font-bold text-tertiary">${c.experience.years}</div>
+                <div class="text-xs text-on-surface-variant">${c.experience.level}</div>
+            `;
             container.appendChild(expCell);
         });
 
@@ -923,7 +939,7 @@ async function initCandidateComparison() {
         skillsLabel.innerHTML = `
             <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined text-primary-fixed">psychology_alt</span>
-                <span class="font-bold text-on-surface">Skills alignment</span>
+                <span class="font-bold text-on-surface">Top Skills</span>
             </div>
         `;
         container.appendChild(skillsLabel);
@@ -932,69 +948,127 @@ async function initCandidateComparison() {
             const skillCell = document.createElement('div');
             skillCell.className = 'p-8 border-b border-white/5 border-l border-white/5 space-y-4';
             
-            // Render first 4 skills with visual bar
-            skillCell.innerHTML = c.skills.slice(0, 3).map(skill => `
+            const topSkills = c.skills.slice(0, 3);
+            skillCell.innerHTML = topSkills.map(skill => `
                 <div class="space-y-1">
                     <div class="flex justify-between text-[10px] uppercase font-bold tracking-wider mb-1">
-                        <span>${skill}</span>
-                        <span class="text-tertiary">100%</span>
+                        <span>${skill.name}</span>
+                        <span class="text-tertiary">${skill.proficiency}</span>
                     </div>
                     <div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
                         <div class="h-full bg-tertiary rounded-full shadow-[0_0_8px_rgba(78,222,163,0.5)]" style="width: 100%"></div>
                     </div>
                 </div>
-            `).join('') || '<p class="text-xs text-outline">None</p>';
+            `).join('') || '<p class="text-xs text-outline">No skills listed</p>';
             
             container.appendChild(skillCell);
         });
 
-        // Row 4: AI Sentiment fit description
-        const sentimentLabel = document.createElement('div');
-        sentimentLabel.className = 'p-8 border-b border-white/5 flex items-start pt-10 bg-white/2';
-        sentimentLabel.innerHTML = `
+        // Row 4: Education
+        const eduLabel = document.createElement('div');
+        eduLabel.className = 'p-8 border-b border-white/5 flex items-start pt-10 bg-white/2';
+        eduLabel.innerHTML = `
             <div class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-primary">auto_awesome</span>
-                <span class="font-bold text-on-surface">AI Sentiment</span>
+                <span class="material-symbols-outlined text-primary-fixed">school</span>
+                <span class="font-bold text-on-surface">Education</span>
             </div>
         `;
-        container.appendChild(sentimentLabel);
+        container.appendChild(eduLabel);
 
         candidates.forEach(c => {
-            const ranking = rankings.find(r => r.candidate_id === c.id);
-            const explanation = ranking ? ranking.explanation : "High capability craftsperson.";
-
-            const sentimentCell = document.createElement('div');
-            sentimentCell.className = 'p-8 border-b border-white/5 border-l border-white/5 bg-primary-container/5';
-            sentimentCell.innerHTML = `
-                <div class="flex items-center gap-2 mb-4">
-                    <div class="flex gap-1 text-tertiary">
-                        <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">mood</span>
-                        <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">mood</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-tertiary tracking-widest uppercase">Culture Fit Approved</span>
+            const eduCell = document.createElement('div');
+            eduCell.className = 'p-8 border-b border-white/5 border-l border-white/5';
+            
+            const topEdu = c.education.slice(0, 2);
+            eduCell.innerHTML = topEdu.map(edu => `
+                <div class="mb-3 pb-3 border-b border-white/5 last:border-0">
+                    <p class="text-xs font-bold text-on-surface">${edu.degree || 'Unknown'}</p>
+                    <p class="text-[10px] text-on-surface-variant">${edu.institution || 'Unknown'}</p>
+                    <p class="text-[8px] text-tertiary uppercase font-bold">${edu.tier || 'N/A'}</p>
                 </div>
-                <p class="text-xs text-on-surface-variant leading-relaxed">
-                    ${explanation}
-                </p>
-            `;
-            container.appendChild(sentimentCell);
+            `).join('') || '<p class="text-xs text-outline">No education listed</p>';
+            
+            container.appendChild(eduCell);
         });
 
-        // Row 5: Final fit score circle UI
+        // Row 5: Behavioral Signals
+        const behaviorLabel = document.createElement('div');
+        behaviorLabel.className = 'p-8 border-b border-white/5 flex items-start pt-10';
+        behaviorLabel.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary-fixed">trending_up</span>
+                <span class="font-bold text-on-surface">Engagement</span>
+            </div>
+        `;
+        container.appendChild(behaviorLabel);
+
+        candidates.forEach(c => {
+            const signals = c.behavioral_signals;
+            const behaviorCell = document.createElement('div');
+            behaviorCell.className = 'p-8 border-b border-white/5 border-l border-white/5 space-y-2';
+            behaviorCell.innerHTML = `
+                <div class="flex items-center justify-between text-[10px]">
+                    <span class="text-on-surface-variant">Profile Completeness</span>
+                    <span class="font-bold text-tertiary">${Math.round(signals.profile_completeness)}%</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    ${signals.open_to_work ? '<span class="px-2 py-0.5 rounded text-[8px] bg-tertiary/20 text-tertiary font-bold">OPEN TO WORK</span>' : '<span class="px-2 py-0.5 rounded text-[8px] bg-surface-variant text-on-surface-variant text-xs">Not Actively Looking</span>'}
+                </div>
+                <div class="text-[8px] text-on-surface-variant space-y-1 pt-2">
+                    <p><span class="text-on-surface font-bold">${signals.connection_count}</span> connections</p>
+                    <p><span class="text-on-surface font-bold">${signals.endorsements_received}</span> endorsements</p>
+                </div>
+            `;
+            container.appendChild(behaviorCell);
+        });
+
+        // Row 6: Recommendation
+        const recLabel = document.createElement('div');
+        recLabel.className = 'p-8 border-b border-white/5 flex items-start pt-10 bg-white/2';
+        recLabel.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                <span class="font-bold text-on-surface">Recommendation</span>
+            </div>
+        `;
+        container.appendChild(recLabel);
+
+        candidates.forEach(c => {
+            const rec = c.recommendation;
+            const recColor = rec.level === 'Strong Hire' ? 'text-tertiary' : rec.level === 'Consider' ? 'text-primary' : 'text-on-surface-variant';
+            
+            const recCell = document.createElement('div');
+            recCell.className = 'p-8 border-b border-white/5 border-l border-white/5 bg-primary-container/5';
+            recCell.innerHTML = `
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-sm font-bold ${recColor}">${rec.level}</span>
+                    <span class="text-[8px] text-on-surface-variant font-bold uppercase">(${Math.round(rec.confidence * 100)}% confidence)</span>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed mb-3">${rec.reasoning}</p>
+                <div class="space-y-1">
+                    <p class="text-[8px] font-bold text-tertiary uppercase">Strengths:</p>
+                    <ul class="text-[8px] text-on-surface-variant space-y-0.5">
+                        ${rec.key_strengths.slice(0, 2).map(s => `<li>• ${s}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            container.appendChild(recCell);
+        });
+
+        // Row 7: Final fit score
         const scoreLabel = document.createElement('div');
         scoreLabel.className = 'p-8 flex items-center';
         scoreLabel.innerHTML = `
             <div class="flex items-center gap-3">
                 <span class="material-symbols-outlined text-primary-fixed">target</span>
-                <span class="font-bold text-on-surface">Final Fit Score</span>
+                <span class="font-bold text-on-surface">Match Score</span>
             </div>
         `;
         container.appendChild(scoreLabel);
 
         candidates.forEach(c => {
-            const ranking = rankings.find(r => r.candidate_id === c.id);
-            const score = ranking ? Math.round(ranking.match_score) : 75;
-            const scoreColor = score >= 85 ? 'border-tertiary text-tertiary' : 'border-primary text-primary';
+            const score = Math.round(c.ranking.score || 75);
+            const scoreColor = score >= 80 ? 'border-tertiary text-tertiary' : score >= 60 ? 'border-primary text-primary' : 'border-on-surface-variant text-on-surface-variant';
 
             const scoreCell = document.createElement('div');
             scoreCell.className = 'p-8 border-l border-white/5 flex items-center justify-center';

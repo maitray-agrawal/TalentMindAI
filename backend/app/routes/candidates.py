@@ -5,8 +5,15 @@ from typing import List, Optional
 from collections import Counter
 from app.database import get_db
 from app.models.candidate import Candidate
+from app.models.job import Job
+from app.models.ranking import Ranking
 from app.schemas.candidate import CandidateCreate, CandidateUpdate, CandidateInDB
+from app.schemas.explanation import CandidateExplanationResponse
+from app.schemas.comparison import CandidateComparisonResponse
 from app.services.ingestion import IngestionService
+from app.services.ranker_service import RankerService
+from app.services.comparison_service import ComparisonService
+
 
 router = APIRouter(prefix="/candidates", tags=["Candidates"])
 
@@ -204,3 +211,187 @@ def delete_candidate(candidate_id: int, db: Session = Depends(get_db)):
     db.delete(candidate)
     db.commit()
     return None
+
+@router.get("/{candidate_id}/explanation", response_model=CandidateExplanationResponse)
+def get_candidate_explanation(
+    candidate_id: int,
+    job_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    # Resolve job
+    if job_id is not None:
+        job = db.query(Job).filter(Job.id == job_id).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+    else:
+        # fallback to first job
+        job = db.query(Job).first()
+        if not job:
+            raise HTTPException(status_code=404, detail="No jobs found in the database")
+
+    # Find ranking or calculate match
+    ranking = db.query(Ranking).filter(
+        Ranking.candidate_id == candidate.id,
+        Ranking.job_id == job.id
+    ).first()
+
+    if ranking:
+        score = ranking.match_score
+        explanation = ranking.explanation
+        tier = ranking.tier
+    else:
+        # Calculate dynamically
+        score, explanation, tier = RankerService.calculate_match(candidate, job)
+
+    # 1. Why Candidate Matched
+    why_matched = (
+        f"{candidate.name} is classified as a '{tier}' for the {job.title} position, "
+        f"matching with an overall compatibility score of {score}%. "
+        f"They possess {candidate.experience_years or 0.0} years of professional experience (required: {job.experience_required or 0.0} years) "
+        f"and align with {len(explanation.get('matched_skills', []))} out of {len(explanation.get('matched_skills', [])) + len(explanation.get('missing_skills', []))} required skills."
+    )
+
+    # 2. Key Strengths
+    strengths = []
+    skills_score = explanation.get("skills_score", 0.0)
+    if skills_score >= 80.0:
+        strengths.append(f"High technical alignment: Matches {skills_score}% of the required skill categories.")
+    elif skills_score >= 50.0:
+        strengths.append("Foundational technical alignment: Matches primary skill requirements.")
+
+    matched_skills = explanation.get("matched_skills", [])
+    if matched_skills:
+        strengths.append(f"Demonstrated core proficiency: Strong experience with {', '.join(matched_skills[:3])}.")
+
+    exp_diff = explanation.get("experience_difference_years", 0.0)
+    if exp_diff >= 3.0:
+        strengths.append(f"Seniority surplus: Exceeds the role's targeted experience requirement by {round(exp_diff, 1)} years.")
+    elif exp_diff >= 0.0:
+        strengths.append(f"Meets experience criteria: Possesses {candidate.experience_years or 0.0} years of experience.")
+
+    if explanation.get("has_retrieval_experience"):
+        strengths.append("Domain expertise: Proven career background in search, recommendation systems, or information retrieval.")
+
+    edu_score = explanation.get("education_score", 0.0)
+    if edu_score >= 80.0:
+        strengths.append("Strong academic credentials: High-tier computer science or technical degree background.")
+
+    beh_score = explanation.get("behavioral_score", 0.0)
+    if beh_score >= 80.0:
+        strengths.append("High platform engagement: Excellent profile completeness and responsiveness indicators.")
+
+    # Fallback if list is too short
+    if len(strengths) < 2:
+        strengths.append("Basic requirements met: Matches key qualifications for the role.")
+        strengths.append("Responsive profile: Actively reachable on the platform.")
+
+    # 3. Weaknesses / Risks
+    weaknesses = []
+    missing_skills = explanation.get("missing_skills", [])
+    if missing_skills:
+        weaknesses.append(f"Skill gaps detected: Lacks proven experience in key requested capabilities: {', '.join(missing_skills[:3])}.")
+
+    exp_diff = explanation.get("experience_difference_years", 0.0)
+    if exp_diff < 0:
+        weaknesses.append(f"Experience deficit: Under-qualified by {round(abs(exp_diff), 1)} years relative to the job requirements.")
+
+    # Average company tenure
+    if candidate.career_history and len(candidate.career_history) >= 2:
+        total_months = sum(jh.get("duration_months") or 0 for jh in candidate.career_history)
+        if total_months > 0:
+            avg_tenure = total_months / len(candidate.career_history)
+            if avg_tenure < 15.0:
+                weaknesses.append(f"Retention risk warning: Candidate exhibits a high-turnover pattern with an average tenure of {round(avg_tenure, 1)} months.")
+
+    loc_score = explanation.get("location_score", 0.0)
+    if loc_score < 50.0:
+        weaknesses.append(f"Location mismatch: Prefers {candidate.work_preference or 'Remote'} mode but the role is {job.work_preference or 'Onsite'} in {job.location or 'any office'}.")
+
+    cand_skills_set = {s.lower().strip() for s in (candidate.skills or [])}
+    has_wrapper = any(s in cand_skills_set for s in ["langchain", "openai", "openai embeddings"])
+    has_core = any(s in cand_skills_set for s in ["pytorch", "tensorflow", "scikit-learn", "xgboost", "lightgbm", "search", "retrieval", "ranking", "recommendation"])
+    if has_wrapper and not has_core:
+        weaknesses.append("Foundational gap: Demonstrates knowledge of wrapper APIs (LangChain/OpenAI) but lacks core ML/algorithmic foundations.")
+
+    if not weaknesses:
+        weaknesses.append("No major technical or cultural risk factors identified.")
+
+    # 4. Hiring Recommendation
+    if score >= 85.0:
+        hiring_recommendation = (
+            f"Fast-Track to Interview: Highly recommended. {candidate.name} is an exceptional fit ({score}%) who meets "
+            f"or exceeds all key criteria. Their engineering background is highly compatible with obsidian architectures."
+        )
+    elif score >= 70.0:
+        hiring_recommendation = (
+            f"Proceed to Screening: Recommended. {candidate.name} is a strong candidate ({score}%) with minor skill gaps "
+            f"in {', '.join(missing_skills[:2]) if missing_skills else 'certain technologies'} that can be easily addressed via onboarding upskilling."
+        )
+    elif score >= 50.0:
+        hiring_recommendation = (
+            f"Conditional Review: Neutral. {candidate.name} matches basic criteria ({score}%), but shows notable gaps in experience "
+            f"or skills. Recommend scheduling a preliminary technical call if top-tier options are limited."
+        )
+    else:
+        hiring_recommendation = (
+            f"Do Not Proceed: Unsuitable. {candidate.name} ({score}%) lacks core qualifications, required experience, "
+            f"or critical technical capabilities needed for this role."
+        )
+
+    return CandidateExplanationResponse(
+        candidate_id=candidate.id,
+        job_id=job.id,
+        match_score=score,
+        tier=tier,
+        why_matched=why_matched,
+        strengths=strengths,
+        weaknesses=weaknesses,
+        missing_skills=missing_skills,
+        hiring_recommendation=hiring_recommendation
+    )
+
+
+@router.post("/compare", response_model=CandidateComparisonResponse, status_code=status.HTTP_200_OK)
+def compare_candidates(
+    candidate_ids: List[int],
+    job_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Compare multiple candidates side-by-side.
+    
+    Shows:
+    - Skills and proficiency levels
+    - Experience and career history
+    - Education background
+    - Behavioral signals and engagement
+    - Ranking scores (if job_id provided)
+    - Hiring recommendations
+    
+    Args:
+        candidate_ids: List of candidate IDs to compare (minimum 2)
+        job_id: Optional job ID for ranking comparison
+        db: Database session
+        
+    Returns:
+        Comprehensive comparison data for all candidates
+    """
+    try:
+        comparison_data = ComparisonService.compare_candidates(
+            candidate_ids=candidate_ids,
+            job_id=job_id,
+            db=db
+        )
+        return CandidateComparisonResponse(
+            candidates=comparison_data["candidates"],
+            summary=comparison_data["summary"]
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Comparison failed: {str(e)}")
+
