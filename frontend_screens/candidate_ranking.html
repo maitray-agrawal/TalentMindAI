@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TalentMind AI | Candidate Ranking</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist:wght@400;500;600;700;900&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .glass-card-highlight {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+        }
+        .cyber-border {
+            border: 1px solid #00a2e6;
+            box-shadow: 0 0 10px rgba(0, 162, 230, 0.2);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#004c6e",
+                    "secondary-fixed": "#c9e6ff",
+                    "surface-container-high": "#222a3d",
+                    "secondary-fixed-dim": "#89ceff",
+                    "on-error": "#690005",
+                    "tertiary-container": "#007650",
+                    "on-primary-container": "#ede0ff",
+                    "primary-fixed": "#eaddff",
+                    "tertiary": "#4edea3",
+                    "on-secondary": "#00344d",
+                    "outline": "#958da1",
+                    "on-surface": "#dae2fd",
+                    "on-secondary-container": "#00344e",
+                    "surface-container-highest": "#2d3449",
+                    "secondary": "#89ceff",
+                    "on-background": "#dae2fd",
+                    "on-tertiary-fixed-variant": "#005236",
+                    "surface-dim": "#0b1326",
+                    "tertiary-fixed-dim": "#4edea3",
+                    "on-tertiary-container": "#76ffc2",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#d2bbff",
+                    "background": "#0b1326",
+                    "primary": "#d2bbff",
+                    "surface-variant": "#2d3449",
+                    "primary-container": "#7c3aed",
+                    "on-primary": "#3f008e",
+                    "on-surface-variant": "#ccc3d8",
+                    "outline-variant": "#4a4455",
+                    "inverse-surface": "#dae2fd",
+                    "inverse-primary": "#732ee4",
+                    "on-error-container": "#ffdad6",
+                    "inverse-on-surface": "#283044",
+                    "secondary-container": "#00a2e6",
+                    "surface-container": "#171f33",
+                    "surface": "#0b1326",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed": "#001e2f",
+                    "on-primary-fixed": "#25005a",
+                    "on-tertiary-fixed": "#002113",
+                    "surface-container-low": "#131b2e",
+                    "on-tertiary": "#003824",
+                    "surface-bright": "#31394d",
+                    "tertiary-fixed": "#6ffbbe",
+                    "on-primary-fixed-variant": "#5a00c6",
+                    "surface-tint": "#d2bbff",
+                    "surface-container-lowest": "#060e20"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "4px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px",
+                    "margin-desktop": "40px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Geist"],
+                    "label-sm": ["Geist"],
+                    "headline-lg-mobile": ["Geist"],
+                    "headline-xl": ["Geist"],
+                    "mono-data": ["Geist"],
+                    "headline-md": ["Geist"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                    "mono-data": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen selection:bg-primary/30">
+<!-- Global Layout Wrapper -->
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-screen w-80 fixed left-0 top-0 bg-surface/50 dark:bg-surface-container/50 backdrop-blur-xl border-r border-white/10 shadow-2xl shadow-primary/10 flex flex-col py-gutter px-4 z-[60]">
+<div class="mb-10 px-4">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">TalentMind AI</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant/70">Obsidian Intelligence</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Navigation Items -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-xl active:scale-95 group" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-xl active:scale-95 group" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span class="font-body-md">Candidate Search</span>
+</a>
+<!-- Active Tab: Ranking -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-primary-fixed font-bold border-r-2 border-primary bg-primary/5 transition-all duration-300 rounded-l-xl group" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-body-md">Ranking</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-xl active:scale-95 group" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-body-md">Details</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-xl active:scale-95 group" href="#">
+<span class="material-symbols-outlined" data-icon="compare_arrows">compare_arrows</span>
+<span class="font-body-md">Comparison</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-xl active:scale-95 group" href="#">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+<span class="font-body-md">Skill Gap</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300 rounded-xl active:scale-95 group" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span class="font-body-md">Recruiter Copilot</span>
+</a>
+</nav>
+<div class="mt-auto space-y-4 px-4">
+<button class="w-full bg-primary-container text-on-primary-container py-3 px-6 rounded-full font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity ai-glow">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                    New Search
+                </button>
+<a class="flex items-center gap-3 py-3 text-on-surface-variant/70 hover:text-primary transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-80 flex-1 relative overflow-y-auto bg-surface-dim">
+<!-- Background Decoration -->
+<div class="absolute top-0 right-0 w-1/2 h-1/2 bg-primary/5 blur-[120px] rounded-full -z-10"></div>
+<!-- TopNavBar (Shared Component) -->
+<header class="sticky top-0 w-full h-16 bg-surface/30 dark:bg-surface-container-high/30 backdrop-blur-xl border-b border-white/10 z-50 flex justify-between items-center px-margin-desktop">
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant/50" data-icon="search">search</span>
+<input class="bg-surface-container-highest/50 border-none rounded-full pl-10 pr-4 py-1.5 w-64 text-label-sm focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Search across ranked candidates..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<button class="hover:bg-surface-bright/50 dark:hover:bg-surface-container-highest/50 rounded-full p-2 transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="hover:bg-surface-bright/50 dark:hover:bg-surface-container-highest/50 rounded-full p-2 transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</button>
+<button class="hover:bg-surface-bright/50 dark:hover:bg-surface-container-highest/50 rounded-full p-2 transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+<div class="h-8 w-[1px] bg-white/10"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="font-label-sm text-on-surface font-bold">Alex Sterling</p>
+<p class="text-[10px] text-on-surface-variant/70 uppercase tracking-widest">Lead Recruiter</p>
+</div>
+<img alt="Profile" class="h-10 w-10 rounded-full border border-primary/20 object-cover" data-alt="A professional headshot of a senior executive male in his 40s wearing a sharp dark suit. He has a confident and friendly expression, standing against a blurred modern office background with cool blue and purple lighting accents, reflecting a high-tech corporate atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA07WwTQOiNOHZkketrK-G2ijuPHxQB1JGhLKYnVpUFGX9zdCOVB3dT6gJc1qDP_Q0Y48JRgatV5YQg4OXR1Txe4bTpBYFmInZt9fEDu5MOQxy36jQgh9ty-Oh8fOI_-eKKJvLcg_BWfLPrOHmizPC2c75eM1Kf0Tw6qnHuW-upW2HZqW4uirKlxbZvYXtMTtFbmBxnzzAMFxxFAiFGDixy-usTSibYwGkA8-lMUtjPpKZXMi7iEx3TjGJdcFf8r7XkDYNCnRWKudWD"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-margin-desktop space-y-8">
+<!-- Page Header -->
+<div class="flex justify-between items-end">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest rounded-full border border-primary/20">Active Analysis</span>
+<span class="text-on-surface-variant/50 font-mono-data text-label-sm">REQ-2024-082</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Senior Frontend Engineer</h2>
+<p class="text-on-surface-variant max-w-2xl mt-2 font-body-md">AI-curated ranking based on technical excellence, architectural vision, and cultural synergy within the Product Engineering squad.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+                            Filter
+                        </button>
+<button class="px-6 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors font-bold text-label-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="ios_share">ios_share</span>
+                            Export
+                        </button>
+</div>
+</div>
+<!-- Metrics Overview (Bento Style) -->
+<div class="grid grid-cols-12 gap-gutter">
+<div class="col-span-4 glass-panel glass-card-highlight rounded-3xl p-6">
+<div class="flex justify-between items-start mb-4">
+<span class="p-2 bg-primary/10 rounded-lg text-primary material-symbols-outlined" data-icon="groups">groups</span>
+<span class="text-tertiary font-bold text-label-sm flex items-center gap-1">+12% vs avg</span>
+</div>
+<p class="text-on-surface-variant text-label-sm uppercase tracking-widest">Total Evaluated</p>
+<h3 class="font-headline-xl text-headline-xl text-on-surface mt-1">1,248</h3>
+</div>
+<div class="col-span-4 glass-panel glass-card-highlight rounded-3xl p-6">
+<div class="flex justify-between items-start mb-4">
+<span class="p-2 bg-secondary/10 rounded-lg text-secondary-container material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-on-surface-variant font-bold text-label-sm">Top Tier</span>
+</div>
+<p class="text-on-surface-variant text-label-sm uppercase tracking-widest">High Fit Candidates</p>
+<h3 class="font-headline-xl text-headline-xl text-on-surface mt-1">42</h3>
+</div>
+<div class="col-span-4 glass-panel glass-card-highlight rounded-3xl p-6 bg-primary-container/10 border-primary/20">
+<div class="flex justify-between items-start mb-4">
+<span class="p-2 bg-primary/20 rounded-lg text-primary material-symbols-outlined" data-icon="bolt">bolt</span>
+<span class="animate-pulse-slow text-primary text-[10px] font-black uppercase tracking-tighter px-2 bg-primary/10 rounded">Live Matching</span>
+</div>
+<p class="text-on-surface-variant text-label-sm uppercase tracking-widest">Avg. Fit Score</p>
+<h3 class="font-headline-xl text-headline-xl text-on-surface mt-1">84.2<span class="text-headline-md opacity-40">%</span></h3>
+</div>
+</div>
+<!-- Main Leaderboard Table -->
+<div class="glass-panel glass-card-highlight rounded-3xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-white/5 bg-white/5">
+<th class="px-6 py-5 font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px]">Rank</th>
+<th class="px-6 py-5 font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px]">Candidate</th>
+<th class="px-6 py-5 font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] text-center">Fit Score</th>
+<th class="px-6 py-5 font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px]">Technical Excellence</th>
+<th class="px-6 py-5 font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px]">Cultural Synergy</th>
+<th class="px-6 py-5 font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Rank 1 -->
+<tr class="group hover:bg-white/5 transition-all duration-300">
+<td class="px-6 py-6">
+<div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary font-black text-label-sm">01</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-12 h-12 rounded-2xl object-cover" data-alt="Close up portrait of a young professional male developer with glasses and a thoughtful expression. The lighting is dramatic with neon violet and blue highlights, emphasizing a sophisticated technology workspace vibe in a high-end AI talent platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9JOtcGA7vLxtEpujQsd__wSqineaHcABoYphbcLvBFzXfq7VGzuZSWMf-V0SgDp59Xij4HlP2LWaaEHnDtfbVhAa723DGay4CCDsCdjE8HBAvHRaJmKQHanyVrDscn8s2QM4kFFUSOM47JXpLw1qAYpXg3WfC2S8dnVHcvl4fhGMpgFW2gO4UWMrqXdWODQUQiE7ynFUqO9t4rZarxgNjsge29Jh2UYtu_V32XXZPSfMMSnGp4MTkDKnJlpQQsVQP4CnEWdZSstVp"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-tertiary rounded-full border-2 border-surface shadow-lg"></div>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-body-md">Marcus Holloway</h4>
+<p class="text-on-surface-variant/60 text-[12px]">Senior Lead @ TechFlow</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex justify-center">
+<div class="relative h-14 w-14 flex items-center justify-center">
+<svg class="h-full w-full -rotate-90">
+<circle cx="28" cy="28" fill="transparent" r="24" stroke="rgba(255,255,255,0.05)" stroke-width="4"></circle>
+<circle class="text-primary" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150" stroke-dashoffset="7" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-[12px] font-bold text-primary">95</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex flex-wrap gap-2 max-w-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-medium border border-white/5">React/Next.js</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-medium border border-white/5">WebAssembly</span>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold border border-primary/20">System Design</span>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-2">
+<div class="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[92%]"></div>
+</div>
+<span class="text-tertiary font-mono-data text-[12px]">92%</span>
+</div>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-label-sm hover:scale-105 transition-transform active:scale-95 ai-glow">
+                                            Interview
+                                        </button>
+</td>
+</tr>
+<!-- Rank 2 -->
+<tr class="group hover:bg-white/5 transition-all duration-300">
+<td class="px-6 py-6">
+<div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 text-on-surface-variant font-black text-label-sm">02</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-12 h-12 rounded-2xl object-cover" data-alt="Portrait of a professional female software engineer with a bright, intelligent smile. She is wearing a modern charcoal turtleneck, and the background features an abstract digital light installation with cyber blue and emerald green hues, conveying precision and innovation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA45r6ZRHBsMF0Hy_qABXdqOUq_i5EK8kBpvEHqBgwKnYBOshWAW1SD7XEN2l8grAVk_ukWqvu3OB3vtn_vZQWVcsu1z6Kyek7W5WqG0yM08B6O2PIx9ysaHnAg6WGMjNJOopnO4r0qOcuPTFULUC9RZobZ7Nyi3krHyYvoz17eaRYJ08gCM9lU6lplHMy4Au4N5EAPumVSIseItgP1uYci6v5ovPZLnc72LZeZY1JBrlg0cj9NRlEI0aggkdtEpvS39gWTZRQlOZSB"/>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-tertiary rounded-full border-2 border-surface shadow-lg"></div>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-body-md">Elena Rodriguez</h4>
+<p class="text-on-surface-variant/60 text-[12px]">Staff Engineer @ CloudScale</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex justify-center">
+<div class="relative h-14 w-14 flex items-center justify-center">
+<svg class="h-full w-full -rotate-90">
+<circle cx="28" cy="28" fill="transparent" r="24" stroke="rgba(255,255,255,0.05)" stroke-width="4"></circle>
+<circle class="text-primary" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150" stroke-dashoffset="18" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-[12px] font-bold text-primary">88</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex flex-wrap gap-2 max-w-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-medium border border-white/5">TypeScript</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-medium border border-white/5">Node.js</span>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold border border-primary/20">Accessibility</span>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-2">
+<div class="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[86%]"></div>
+</div>
+<span class="text-tertiary font-mono-data text-[12px]">86%</span>
+</div>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="px-4 py-2 border border-primary text-primary rounded-xl font-bold text-label-sm hover:bg-primary/5 transition-all">
+                                            Interview
+                                        </button>
+</td>
+</tr>
+<!-- Rank 3 -->
+<tr class="group hover:bg-white/5 transition-all duration-300">
+<td class="px-6 py-6">
+<div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 text-on-surface-variant font-black text-label-sm">03</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img class="w-12 h-12 rounded-2xl object-cover" data-alt="Portrait of a diverse male engineering lead with a confident presence. He is in a sleek, dimly lit studio environment with architectural glass panels behind him reflecting soft gradients of obsidian and electric violet, projecting high-trust expertise." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArVIE_JZSlZDEI7dSy_TeBxhsT4nS_iiT6vH_1TOuKbWHw38KXKwi6hFZokk7DFmz126vcrMEReLfQCXI2pXiQAycCfrUVir8mo-Gtxfo2yxWCymonMcL3zvG1eOUmEJZvmPo71h-qn9STmUKbkbI8hsNFxOuPWgczSBLt_V48Bi6RwRaaqz1cW06dMUouZ5XAzTgf1M_joj92DmF0yu8d1g8fqh4L6oaa9g9Ms-Yv7xgag92D6EaIcH70zGrnV12eqm3ExLn6pCf4"/>
+</div>
+<div>
+<h4 class="font-bold text-on-surface text-body-md">David Chen</h4>
+<p class="text-on-surface-variant/60 text-[12px]">UX Engineer @ InnovateX</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex justify-center">
+<div class="relative h-14 w-14 flex items-center justify-center">
+<svg class="h-full w-full -rotate-90">
+<circle cx="28" cy="28" fill="transparent" r="24" stroke="rgba(255,255,255,0.05)" stroke-width="4"></circle>
+<circle class="text-primary" cx="28" cy="28" fill="transparent" r="24" stroke="currentColor" stroke-dasharray="150" stroke-dashoffset="30" stroke-width="4"></circle>
+</svg>
+<span class="absolute text-[12px] font-bold text-primary">81</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex flex-wrap gap-2 max-w-xs">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-medium border border-white/5">Vue.js</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant text-[10px] font-medium border border-white/5">D3.js</span>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold border border-primary/20">WebGL</span>
+</div>
+</td>
+<td class="px-6 py-6">
+<div class="flex items-center gap-2">
+<div class="h-1.5 w-24 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-tertiary w-[78%]"></div>
+</div>
+<span class="text-tertiary font-mono-data text-[12px]">78%</span>
+</div>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="px-4 py-2 border border-primary text-primary rounded-xl font-bold text-label-sm hover:bg-primary/5 transition-all">
+                                            Interview
+                                        </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Pagination -->
+<div class="px-6 py-4 border-t border-white/5 flex justify-between items-center bg-white/5">
+<span class="text-on-surface-variant text-[12px]">Showing 1-10 of 42 high-fit candidates</span>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded-lg bg-primary/20 text-primary font-bold text-[12px]">1</button>
+<button class="px-3 py-1 rounded-lg border border-white/10 text-on-surface-variant hover:bg-white/5 transition-colors text-[12px]">2</button>
+<button class="px-3 py-1 rounded-lg border border-white/10 text-on-surface-variant hover:bg-white/5 transition-colors text-[12px]">3</button>
+<button class="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Copilot Floating Panel (Right Sidebar Logic) -->
+<aside class="fixed right-6 bottom-6 w-80 glass-panel cyber-border rounded-3xl p-6 z-40 transform transition-transform duration-500 hover:scale-[1.02]">
+<div class="flex items-center gap-3 mb-4">
+<div class="p-2 bg-secondary/20 rounded-xl text-secondary-container">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+</div>
+<div>
+<h5 class="font-bold text-on-surface text-label-sm uppercase tracking-wider">AI Copilot Analysis</h5>
+<p class="text-[10px] text-secondary-container font-medium">Listening to active search...</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+<p class="text-body-md text-on-surface-variant text-[13px] leading-relaxed">
+                            "Marcus Holloway shows a 98.4% match for your 'Scalability' requirement based on past Github contributions to Open Source UI frameworks."
+                        </p>
+</div>
+<div class="flex items-center gap-2 text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="lightbulb">lightbulb</span>
+<span class="text-[11px] font-bold">Recommendation: Invite top 3 candidates to Stage 1.</span>
+</div>
+<button class="w-full py-2 bg-secondary-container text-on-secondary-container rounded-xl font-bold text-[12px] hover:brightness-110 transition-all">
+                        Execute Bulk Action
+                    </button>
+</div>
+</aside>
+</main>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+        // Interactive table row hover effect - subtle brightness increase as per style guide
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                row.style.filter = 'brightness(1.15)';
+            });
+            row.addEventListener('mouseleave', () => {
+                row.style.filter = 'brightness(1)';
+            });
+        });
+
+        // Floating Sidebar Entry Animation
+        window.addEventListener('DOMContentLoaded', () => {
+            const copilot = document.querySelector('aside.fixed.right-6');
+            copilot.style.transform = 'translateY(100%)';
+            copilot.style.opacity = '0';
+            
+            setTimeout(() => {
+                copilot.style.transition = 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
+                copilot.style.transform = 'translateY(0)';
+                copilot.style.opacity = '1';
+            }, 500);
+        });
+    </script>
+<script src="integration.js"></script>
+</body></html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings | TalentMind AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.05);
+        }
+        .glass-card-hover:hover {
+            border-color: rgba(124, 58, 237, 0.3);
+            background: rgba(30, 41, 59, 0.6);
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+        }
+        .cyber-border {
+            border-left: 3px solid #4edea3;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "secondary-fixed": "#c9e6ff",
+                        "surface-container-high": "#222a3d",
+                        "secondary-fixed-dim": "#89ceff",
+                        "on-error": "#690005",
+                        "tertiary-container": "#007650",
+                        "on-primary-container": "#ede0ff",
+                        "primary-fixed": "#eaddff",
+                        "tertiary": "#4edea3",
+                        "on-secondary": "#00344d",
+                        "outline": "#958da1",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-container": "#00344e",
+                        "surface-container-highest": "#2d3449",
+                        "secondary": "#89ceff",
+                        "on-background": "#dae2fd",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "surface-dim": "#0b1326",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-tertiary-container": "#76ffc2",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#d2bbff",
+                        "background": "#0b1326",
+                        "primary": "#d2bbff",
+                        "surface-variant": "#2d3449",
+                        "primary-container": "#7c3aed",
+                        "on-primary": "#3f008e",
+                        "on-surface-variant": "#ccc3d8",
+                        "outline-variant": "#4a4455",
+                        "inverse-surface": "#dae2fd",
+                        "inverse-primary": "#732ee4",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#283044",
+                        "secondary-container": "#00a2e6",
+                        "surface-container": "#171f33",
+                        "surface": "#0b1326",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#001e2f",
+                        "on-primary-fixed": "#25005a",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-container-low": "#131b2e",
+                        "on-tertiary": "#003824",
+                        "surface-bright": "#31394d",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-primary-fixed-variant": "#5a00c6",
+                        "surface-tint": "#d2bbff",
+                        "surface-container-lowest": "#060e20"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "container-max": "1440px",
+                        "margin-desktop": "40px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "label-sm": ["Geist"],
+                        "headline-xl": ["Geist"],
+                        "mono-data": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "mono-data": ["14px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary/30 min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="h-screen w-80 fixed left-0 top-0 bg-surface/50 dark:bg-surface-container/50 backdrop-blur-xl border-r border-white/10 shadow-2xl shadow-primary/10 flex flex-col py-gutter px-4 z-50">
+<div class="mb-10 flex items-center gap-3 px-2">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center ai-glow">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed leading-tight">TalentMind AI</h1>
+<p class="font-label-sm text-label-sm text-outline opacity-70">Obsidian Intelligence</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active state determined as "Settings" based on prompt -->
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-label-sm text-label-sm">Candidate Search</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label-sm text-label-sm">Ranking</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-sm text-label-sm">Details</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">compare_arrows</span>
+<span class="font-label-sm text-label-sm">Comparison</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">trending_up</span>
+<span class="font-label-sm text-label-sm">Skill Gap</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary dark:hover:bg-primary-container/20 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-label-sm text-label-sm">Recruiter Copilot</span>
+</a>
+<a class="flex items-center gap-4 py-3 px-4 rounded-lg text-primary dark:text-primary-fixed font-bold border-r-2 border-primary bg-primary/5" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 px-2">
+<button class="w-full py-3 px-4 rounded-xl bg-primary-container text-on-primary-container font-headline-md text-sm font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform ai-glow">
+<span class="material-symbols-outlined text-lg">add</span>
+                New Search
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-80 min-h-screen flex flex-col relative overflow-hidden">
+<!-- Background Animation -->
+
+<!-- Top Header Bar -->
+<header class="h-16 flex items-center justify-between px-margin-desktop sticky top-0 bg-surface/30 dark:bg-surface-container-high/30 backdrop-blur-xl border-b border-white/10 z-40">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container/50 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary/50 text-on-surface" placeholder="Search settings..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:bg-surface-bright/50 p-2 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="hover:bg-surface-bright/50 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+</button>
+<button class="hover:bg-surface-bright/50 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">help</span>
+</button>
+<div class="h-8 w-[1px] bg-white/10 mx-2"></div>
+<div class="flex items-center gap-3">
+<img alt="Recruiter Profile" class="w-10 h-10 rounded-full object-cover border border-primary/30" data-alt="A professional close-up portrait of a female HR executive with a warm but focused expression, wearing a navy blue blazer. The background is a high-end corporate office with soft, blurred city lights visible through large glass windows, maintaining the Obsidian Intelligence aesthetic with deep blues and cool tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU94LNjkXkODeLA64xRYznjTJAkWhIwuia7kMgGXGsKqPNr_IOQC3hHNQnkDR8crt5h4b_A4341oyIFS3twvcRCOj2kbjLnPSun2RvUvfDkPbh0ZPI_UhBA7NNiqfD1nHfcIx-2x5bDEPvkB4VKCMVsXexhRV4deTRPUC3OOVVlYVUR1luKnDUPiQ5jxs-G2eiZckUxFrU8PUIbGHPt-pc1O-4whrP5EO1PjW0P7WT0M9xhzE8-QL85CG0_b7Gj6m2gHzYgAmwewGp"/>
+<div class="hidden lg:block text-left">
+<p class="font-label-sm text-sm font-bold text-on-surface">Sarah Sterling</p>
+<p class="text-[10px] text-outline uppercase tracking-wider">Lead Recruiter</p>
+</div>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-margin-desktop space-y-8 relative z-10">
+<header>
+<h2 class="font-headline-xl text-headline-xl text-on-surface mb-2">System Configuration</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Manage your obsidian intelligence engine parameters, team access, and external data pipelines.</p>
+</header>
+<!-- Tabbed Navigation -->
+<div class="flex gap-8 border-b border-white/10 pb-1 overflow-x-auto">
+<button class="pb-4 px-2 font-headline-md text-sm border-b-2 border-primary text-primary transition-all" id="tab-ai" onclick="switchTab('ai')">AI Sensitivity</button>
+<button class="pb-4 px-2 font-headline-md text-sm border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" id="tab-integrations" onclick="switchTab('integrations')">Integrations</button>
+<button class="pb-4 px-2 font-headline-md text-sm border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" id="tab-team" onclick="switchTab('team')">Team Management</button>
+<button class="pb-4 px-2 font-headline-md text-sm border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-all" id="tab-notifications" onclick="switchTab('notifications')">Notifications</button>
+</div>
+<div class="grid grid-cols-12 gap-gutter" id="content-area">
+<!-- AI Sensitivity Section -->
+<section class="col-span-12 lg:col-span-8 space-y-6" id="section-ai">
+<div class="glass-card p-8 rounded-xl">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+</div>
+<div>
+<h3 class="font-headline-md text-on-surface">Intelligence Heuristics</h3>
+<p class="text-sm text-outline">Fine-tune the weights for candidate ranking</p>
+</div>
+</div>
+<span class="bg-tertiary/10 text-tertiary text-[10px] px-3 py-1 rounded-full border border-tertiary/20 font-bold tracking-widest uppercase">Live System</span>
+</div>
+<div class="space-y-10">
+<div>
+<div class="flex justify-between items-center mb-4">
+<label class="font-body-md text-sm text-on-surface">Skill Match Threshold</label>
+<span class="text-primary font-mono-data text-sm">85% Match</span>
+</div>
+<input class="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-primary" type="range"/>
+<p class="mt-2 text-xs text-outline italic">Strictness of semantic matching between resume and job description.</p>
+</div>
+<div>
+<div class="flex justify-between items-center mb-4">
+<label class="font-body-md text-sm text-on-surface">Experience Relevancy Decay</label>
+<span class="text-primary font-mono-data text-sm">Low (0.2)</span>
+</div>
+<input class="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-primary" type="range"/>
+<p class="mt-2 text-xs text-outline italic">How quickly the value of older experience diminishes in the ranking.</p>
+</div>
+<div>
+<div class="flex justify-between items-center mb-4">
+<label class="font-body-md text-sm text-on-surface">Bias Mitigation Engine</label>
+<div class="flex items-center gap-3">
+<span class="text-xs text-outline">Enhanced</span>
+<button class="w-12 h-6 bg-primary rounded-full relative transition-colors">
+<div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
+</button>
+</div>
+</div>
+<p class="text-xs text-outline">Redacts sensitive identifiers and enforces neutral semantic evaluation across demographic profiles.</p>
+</div>
+</div>
+</div>
+<div class="glass-card p-8 rounded-xl border-l-4 border-tertiary">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div>
+<h4 class="font-headline-md text-on-surface mb-1">AI Copilot Logic</h4>
+<p class="text-sm text-outline mb-4">The recruiter assistant currently prioritizes speed over depth for initial screenings. You can toggle this behavior for critical executive searches.</p>
+<button class="px-6 py-2 rounded-lg border border-tertiary text-tertiary hover:bg-tertiary/10 transition-colors text-sm font-bold uppercase tracking-wider">Recalibrate Agent</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Sidebar Contextual Panel -->
+<aside class="col-span-12 lg:col-span-4 space-y-6">
+<div class="glass-card p-6 rounded-xl cyber-border bg-surface-container-high/40">
+<h3 class="font-headline-md text-sm mb-4 uppercase tracking-widest text-outline">Integration Health</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-blue-500/20 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-400 text-sm">link</span>
+</div>
+<span class="text-sm font-body-md">LinkedIn ATS</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary ai-glow"></div>
+<span class="text-[10px] text-tertiary uppercase font-bold">Active</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-green-500/20 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-green-400 text-sm">work</span>
+</div>
+<span class="text-sm font-body-md">Greenhouse</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary ai-glow"></div>
+<span class="text-[10px] text-tertiary uppercase font-bold">Active</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg opacity-50">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-white/10 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-sm">stack</span>
+</div>
+<span class="text-sm font-body-md">Slack Hook</span>
+</div>
+<span class="text-[10px] text-outline uppercase font-bold">Disconnected</span>
+</div>
+</div>
+<button class="w-full mt-6 py-3 border border-white/10 rounded-lg text-sm hover:bg-white/5 transition-colors">Manage All Webhooks</button>
+</div>
+<div class="glass-card p-6 rounded-xl overflow-hidden relative group">
+<div class="relative z-10">
+<h3 class="font-headline-md text-on-surface mb-2">Team Usage</h3>
+<p class="text-xs text-outline mb-4">12 / 20 Active Licenses utilized this month.</p>
+<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-6">
+<div class="h-full bg-primary ai-glow w-[60%]"></div>
+</div>
+<button class="text-primary text-xs font-bold flex items-center gap-2 hover:gap-3 transition-all">
+                                View Billing &amp; Seats <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</button>
+</div>
+
+</div>
+</aside>
+</div>
+</div>
+<!-- Team Management Section (Initially Hidden) -->
+<div class="hidden p-margin-desktop pt-0 space-y-6" id="section-team">
+<div class="glass-card rounded-xl overflow-hidden">
+<table class="w-full border-collapse">
+<thead>
+<tr class="bg-white/5 border-b border-white/10 text-left">
+<th class="p-4 font-label-sm text-outline uppercase tracking-wider text-[10px]">Team Member</th>
+<th class="p-4 font-label-sm text-outline uppercase tracking-wider text-[10px]">Role</th>
+<th class="p-4 font-label-sm text-outline uppercase tracking-wider text-[10px]">Access Level</th>
+<th class="p-4 font-label-sm text-outline uppercase tracking-wider text-[10px]">Last Login</th>
+<th class="p-4 font-label-sm text-outline uppercase tracking-wider text-[10px]">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="p-4 flex items-center gap-3">
+<img alt="Team Member" class="w-8 h-8 rounded-full border border-white/10" data-alt="A focused male data scientist with glasses, wearing a dark grey sweater. He is in a modern office with minimalist decor and low-key lighting that emphasizes a high-tech obsidian atmosphere. The aesthetic is professional, sophisticated, and tech-oriented." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB1zJj2UaX8JA_7Y4B0CxW0VfshRoRNYVxAEGHSvstA_EgaQxIbJKXlqAa21GBh23rSJ3z_2a-W-9YsRuy-_Tb2O0vKiPylIJvelhdCxFoj9Q9oh-emAYem9Po4AaFCe2IX6UeczAvNokuhg1K5NUf_EYZ38KsF_odrGM9L-JZ__Kg70HTuh1j3B1_dZKpl5fVLqu1fpf_EXbBHOF_8Icpjz0PcysJl9g0mRbYzHyh4P8YIYD5RLZ8mab1gNBNl6ZXPi2Eqqz1M_vD"/>
+<div>
+<p class="text-sm font-bold text-on-surface">Julian Vane</p>
+<p class="text-[10px] text-outline">julian@talentmind.ai</p>
+</div>
+</td>
+<td class="p-4 text-sm text-on-surface-variant">Senior Recruiter</td>
+<td class="p-4"><span class="bg-primary/10 text-primary text-[10px] px-2 py-1 rounded uppercase font-bold">Admin</span></td>
+<td class="p-4 text-sm text-outline font-mono-data">2 mins ago</td>
+<td class="p-4"><button class="p-2 rounded hover:bg-white/10 text-outline"><span class="material-symbols-outlined text-sm">more_vert</span></button></td>
+</tr>
+<tr class="hover:bg-white/[0.02] transition-colors group">
+<td class="p-4 flex items-center gap-3">
+<img alt="Team Member" class="w-8 h-8 rounded-full border border-white/10" data-alt="A professional portrait of a woman in her late 20s with long dark hair, wearing a white silk blouse. She has a confident, bright look, set against a backdrop of a blurred tech office with cool blue and charcoal grey tones, fitting the obsidian intelligence brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7YrZOYjRIMKfO8qUqIvmPmaIqwqkBeQyP8WricCPy_WyCNVOPElI4MrJ7KKIAISKF4WW6N6P3bRBJJmr2s6Uccmty9SOyRw5aB_lRYq_axLcpQRF_lwJjnDt6rSfhm6gNwTS4UuknKp19BOVryQcmo9jJ8CO9iYgGeIctZHWxq2FF0lsyHcqARIaUKx79duTgrG17tLS4Q8hXWQdMfSPPrLHW8SOoT_k2zjitBP7f4YkK8i9LBauEe-7HuEy8OOritFDMl9KHcvjs"/>
+<div>
+<p class="text-sm font-bold text-on-surface">Lia Thorne</p>
+<p class="text-[10px] text-outline">lia.t@talentmind.ai</p>
+</div>
+</td>
+<td class="p-4 text-sm text-on-surface-variant">Talent Associate</td>
+<td class="p-4"><span class="bg-white/5 text-outline text-[10px] px-2 py-1 rounded uppercase font-bold">Standard</span></td>
+<td class="p-4 text-sm text-outline font-mono-data">5h ago</td>
+<td class="p-4"><button class="p-2 rounded hover:bg-white/10 text-outline"><span class="material-symbols-outlined text-sm">more_vert</span></button></td>
+</tr>
+</tbody>
+</table>
+</div>
+<button class="flex items-center gap-2 text-primary font-bold text-sm">
+<span class="material-symbols-outlined">person_add</span> Invite New Collaborator
+            </button>
+</div>
+<!-- Notification Section (Initially Hidden) -->
+<div class="hidden p-margin-desktop pt-0 space-y-6" id="section-notifications">
+<div class="glass-card p-8 rounded-xl max-w-3xl">
+<h3 class="font-headline-md mb-6">Alert Configurations</h3>
+<div class="space-y-6">
+<div class="flex items-center justify-between py-4 border-b border-white/5">
+<div>
+<p class="text-sm font-bold text-on-surface">High-Match Candidate Alert</p>
+<p class="text-xs text-outline">Notify me when a candidate scores above 95% for any open role.</p>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="material-symbols-outlined text-outline">sms</span>
+</div>
+</div>
+<div class="flex items-center justify-between py-4 border-b border-white/5">
+<div>
+<p class="text-sm font-bold text-on-surface">Recruiter Copilot Weekly Summary</p>
+<p class="text-xs text-outline">A summary of AI-driven insights and workflow optimizations.</p>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="material-symbols-outlined text-outline">sms</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Right-side AI Floating Panel (Suppressed on settings based on instructions, but kept as hidden for potential interaction) -->
+<div class="fixed right-0 top-0 h-screen w-80 bg-surface/80 backdrop-blur-2xl border-l border-white/10 translate-x-full transition-transform duration-500 z-[60]" id="ai-panel">
+<div class="p-8 h-full flex flex-col">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-headline-md text-sm uppercase tracking-widest text-primary">AI Insights</h3>
+<button class="material-symbols-outlined text-outline hover:text-white transition-colors" onclick="toggleAIPanel()">close</button>
+</div>
+<div class="flex-1 space-y-6 overflow-y-auto">
+<div class="bg-primary/5 p-4 rounded-xl border border-primary/20">
+<p class="text-xs text-primary font-bold mb-2">AUTO-RECOMMENDATION</p>
+<p class="text-sm text-on-surface">Based on recent searches, I suggest increasing the 'Experience Relevancy' for the Lead DevOps role by 12% to filter for more senior talent.</p>
+<button class="mt-4 w-full py-2 bg-primary text-on-primary text-xs font-bold rounded-lg ai-glow">Apply Suggestion</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro-interaction Scripts -->
+<script>
+        function switchTab(tab) {
+            // Hide all sections
+            document.querySelectorAll('section[id^="section-"], div[id^="section-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('content-area').classList.remove('grid');
+            document.getElementById('content-area').classList.add('hidden');
+
+            // Reset tab styles
+            document.querySelectorAll('button[id^="tab-"]').forEach(btn => {
+                btn.classList.remove('border-primary', 'text-primary');
+                btn.classList.add('border-transparent', 'text-on-surface-variant');
+            });
+
+            // Activate current tab
+            const activeTab = document.getElementById('tab-' + tab);
+            activeTab.classList.add('border-primary', 'text-primary');
+            activeTab.classList.remove('border-transparent', 'text-on-surface-variant');
+
+            // Show current section
+            if (tab === 'ai') {
+                document.getElementById('content-area').classList.remove('hidden');
+                document.getElementById('content-area').classList.add('grid');
+                document.getElementById('section-ai').classList.remove('hidden');
+            } else {
+                const section = document.getElementById('section-' + tab);
+                if (section) section.classList.remove('hidden');
+            }
+        }
+
+        function toggleAIPanel() {
+            const panel = document.getElementById('ai-panel');
+            panel.classList.toggle('translate-x-full');
+        }
+
+        // Initialize tooltips/interactions if needed
+        console.log("TalentMind AI Settings Loaded");
+    </script>
+<script src="integration.js"></script>
+</body></html>
