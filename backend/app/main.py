@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routes import candidates, jobs, ranking, copilot
+from app.routes import candidates, jobs, ranking, copilot, submission
 from app.config import settings
 
 # Create database tables
@@ -27,6 +27,7 @@ app.include_router(candidates.router, prefix=settings.API_V1_STR)
 app.include_router(jobs.router, prefix=settings.API_V1_STR)
 app.include_router(ranking.router, prefix=settings.API_V1_STR)
 app.include_router(copilot.router, prefix=settings.API_V1_STR)
+app.include_router(submission.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
