@@ -83,7 +83,11 @@ def delete_job(job_id: int, db: Session = Depends(get_db)):
 @router.post("/analyze")
 def analyze_job_description(file: UploadFile = File(...)):
     contents = file.file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
+        
     filename = file.filename
+    text = ""
     
     if filename.endswith(".docx"):
         try:
@@ -100,6 +104,9 @@ def analyze_job_description(file: UploadFile = File(...)):
                 raise HTTPException(status_code=400, detail=f"Failed to decode text file: {str(e)}")
     else:
         raise HTTPException(status_code=400, detail="Unsupported file format. Please upload a .docx or .txt file.")
+        
+    if not text or not text.strip():
+        raise HTTPException(status_code=400, detail="The uploaded file contains no text content.")
         
     analysis = JDAnalyzerService.analyze_detailed(text)
     return analysis
