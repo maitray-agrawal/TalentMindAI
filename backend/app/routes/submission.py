@@ -5,6 +5,7 @@ from typing import List
 import io
 import os
 import csv
+import re
 
 from app.database import get_db
 from app.models.candidate import Candidate
@@ -13,6 +14,8 @@ from app.models.ranking import Ranking
 from app.services.ranker_service import RankerService
 
 router = APIRouter(prefix="/submission", tags=["Submission"])
+
+CANDIDATE_ID_PATTERN = re.compile(r"^CAND_[0-9]{7}$")
 
 @router.post("/generate", status_code=status.HTTP_200_OK)
 def generate_submission(
@@ -52,7 +55,34 @@ def generate_submission(
         # Fetch rankings again after calculation
         rankings = db.query(Ranking).filter(Ranking.job_id == job_id).order_by(Ranking.match_score.desc()).all()
 
-    # 4. Generate CSV
+    # 4. Filter, Sort, and Enforce tie-breaks
+    valid_items = []
+    for r in rankings:
+        candidate = r.candidate
+        if not candidate:
+            continue
+
+        cand_id_str = candidate.candidate_id or f"CAND_{candidate.id:07d}"
+        
+        if not CANDIDATE_ID_PATTERN.match(cand_id_str):
+            continue
+
+        score_val = f"{r.match_score / 100.0:.4f}"
+        float_score = float(score_val)
+
+        valid_items.append({
+            "ranking": r,
+            "candidate": candidate,
+            "cand_id_str": cand_id_str,
+            "score_val": score_val,
+            "float_score": float_score
+        })
+
+    # Sort by descending score, then ascending candidate ID for tie-breaking
+    valid_items.sort(key=lambda x: (-x["float_score"], x["cand_id_str"]))
+    top_100 = valid_items[:100]
+
+    # 5. Generate CSV
     output = io.StringIO()
     writer = csv.writer(output, lineterminator='\n')
     writer.writerow(["candidate_id", "rank", "score", "reasoning"])
@@ -60,21 +90,14 @@ def generate_submission(
     seen_ranks = set()
     prev_score = float('inf')
 
-    for idx, r in enumerate(rankings):
-        candidate = r.candidate
-        if not candidate:
-            continue
-
-        # Use candidate_id string, default to database ID format if null
-        cand_id_str = candidate.candidate_id or f"CAND_{candidate.id:07d}"
+    for idx, item in enumerate(top_100):
+        r = item["ranking"]
+        candidate = item["candidate"]
+        cand_id_str = item["cand_id_str"]
+        score_val = item["score_val"]
         rank_val = idx + 1
         
-        # Format score as a 0.0 - 1.0 decimal value with 4 decimal places
-        # Database stores scores out of 100
-        score_val = f"{r.match_score / 100.0:.4f}"
-        
-        # Validate descending order
-        current_float_score = float(score_val)
+        current_float_score = item["float_score"]
         if current_float_score > prev_score:
             raise HTTPException(
                 status_code=500,
@@ -118,7 +141,7 @@ def generate_submission(
 
     csv_content = output.getvalue()
 
-    # 5. Write submission.csv to workspace root
+    # 6. Write submission.csv to workspace root
     workspace_csv_path = r"d:\TalentMindAI\submission.csv"
     try:
         with open(workspace_csv_path, "w", newline="", encoding="utf-8") as f:
@@ -127,7 +150,7 @@ def generate_submission(
         # Non-blocking, log failure to write local file
         print(f"Warning: Could not save submission.csv to workspace root: {e}")
 
-    # 6. Stream file download response
+    # 7. Stream file download response
     return StreamingResponse(
         io.BytesIO(csv_content.encode("utf-8")),
         media_type="text/csv",
