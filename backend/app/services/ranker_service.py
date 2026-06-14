@@ -4,6 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from typing import List, Dict, Any, Tuple
 from app.models.candidate import Candidate
 from app.models.job import Job
+from app.config import settings
 
 class RankerService:
     @staticmethod
@@ -69,13 +70,82 @@ class RankerService:
             else:
                 location_score = 0.9  # Job is remote, candidate is flexible
 
-        # 5. Weighted Score Calculation
-        # Weights: 45% Skills, 25% Experience, 15% Text Similarity, 15% Location Fit
+        # 5. Education Match
+        edu_score = 1.0
+        # Get education requirements if present
+        edu_reqs = []
+        if hasattr(job, 'education_requirements') and job.education_requirements:
+            edu_reqs = job.education_requirements
+        elif job.description:
+            try:
+                from app.services.jd_analyzer import JDAnalyzerService
+                detailed = JDAnalyzerService.analyze_detailed(job.description)
+                edu_reqs = detailed.get("education_requirements", [])
+            except Exception:
+                edu_reqs = []
+                
+        # If there are no specified education requirements, candidate gets full score
+        if not edu_reqs or any("not specified" in r.lower() for r in edu_reqs):
+            edu_score = 1.0
+        else:
+            cand_edu_list = candidate.education or []
+            if not cand_edu_list:
+                edu_score = 0.5  # No education listed but job requires it
+            else:
+                best_match = 0.5
+                for edu in cand_edu_list:
+                    inst = (edu.get("institution") or "").lower()
+                    deg = (edu.get("degree") or "").lower()
+                    field = (edu.get("field_of_study") or "").lower()
+                    tier = (edu.get("tier") or "").lower()
+                    
+                    match_val = 0.6  # Base score for having some education
+                    
+                    # Check tier 1
+                    if tier == "tier_1" or "tier-1" in tier or "stanford" in inst or "mit" in inst or "harvard" in inst:
+                        match_val += 0.2
+                        
+                    # Check field match
+                    job_title_lower = (job.title or "").lower()
+                    if "computer science" in field or "cs" in field or "engineering" in field or "ai" in field or "ml" in field:
+                        if any(kw in job_title_lower for kw in ["engineer", "developer", "scientist", "tech", "ai", "ml", "specialist", "programmer", "architect", "lead"]):
+                            match_val += 0.2
+                            
+                    # Check degree level
+                    if "ph.d" in deg or "phd" in deg or "doctor" in deg:
+                        match_val += 0.2
+                    elif "master" in deg or "m.s" in deg or "m.tech" in deg:
+                        match_val += 0.1
+                        
+                    best_match = max(best_match, min(1.0, match_val))
+                edu_score = best_match
+
+        # 6. Behavioral Signals Match
+        signals = candidate.redrob_signals or {}
+        
+        # Profile completeness (40% weight)
+        completeness = float(signals.get("profile_completeness_score", 50.0)) / 100.0
+        
+        # Open to work flag (20% weight)
+        open_to_work = 1.0 if signals.get("open_to_work_flag", False) else 0.5
+        
+        # GitHub activity score (20% weight)
+        github = float(signals.get("github_activity_score", 50.0)) / 100.0
+        
+        # Recruiter response rate (20% weight)
+        response_rate = float(signals.get("recruiter_response_rate", 0.8))
+        
+        behavioral_score = (completeness * 0.4) + (open_to_work * 0.2) + (github * 0.2) + (response_rate * 0.2)
+        behavioral_score = max(0.0, min(1.0, behavioral_score))
+
+        # 7. Weighted Score Calculation
         final_score = (
-            (skills_match_ratio * 0.45) +
-            (exp_score * 0.25) +
-            (text_sim * 0.15) +
-            (location_score * 0.15)
+            (skills_match_ratio * settings.WEIGHT_SKILLS) +
+            (exp_score * settings.WEIGHT_EXPERIENCE) +
+            (text_sim * settings.WEIGHT_SEMANTIC) +
+            (edu_score * settings.WEIGHT_EDUCATION) +
+            (behavioral_score * settings.WEIGHT_BEHAVIORAL) +
+            (location_score * settings.WEIGHT_LOCATION)
         ) * 100.0
         
         # Clip score between 0 and 100
@@ -95,6 +165,8 @@ class RankerService:
             "skills_score": round(skills_match_ratio * 100.0, 1),
             "experience_score": round(exp_score * 100.0, 1),
             "text_similarity_score": round(text_sim * 100.0, 1),
+            "education_score": round(edu_score * 100.0, 1),
+            "behavioral_score": round(behavioral_score * 100.0, 1),
             "location_score": round(location_score * 100.0, 1),
             "matched_skills": matched_skills,
             "missing_skills": missing_skills,

@@ -124,18 +124,46 @@ def get_candidate_skill_gap(candidate_id: int, job_id: int, db: Session = Depend
 
 @router.post("/generate", response_model=List[CandidateRankResponse])
 def generate_ranking(req: RankingGenerateRequest, db: Session = Depends(get_db)):
-    # 1. Analyze the job description
-    analysis = JDAnalyzerService.analyze_detailed(req.job_description)
+    # Validate that we have at least one non-empty source of job information
+    has_jd = bool(req.job_description and req.job_description.strip())
+    has_structured = any([
+        bool(req.title and req.title.strip()),
+        bool(req.required_skills),
+        req.experience_required is not None,
+        bool(req.education_requirements),
+        bool(req.work_preference and req.work_preference.strip()),
+        bool(req.location and req.location.strip())
+    ])
     
+    if not has_jd and not has_structured:
+        raise HTTPException(
+            status_code=400,
+            detail="Must provide either a non-empty job_description or structured job analysis fields."
+        )
+
+    # 1. Resolve analyzed/provided job attributes
+    analysis = {}
+    if req.job_description:
+        analysis = JDAnalyzerService.analyze_detailed(req.job_description)
+
+    title = req.title or analysis.get("title") or "Untitled Role"
+    description = req.job_description or req.title or "Pre-analyzed Job Description"
+    required_skills = req.required_skills if req.required_skills is not None else (analysis.get("required_skills") or [])
+    experience_required = req.experience_required if req.experience_required is not None else float(analysis.get("experience_required") or 0.0)
+    work_preference = req.work_preference or analysis.get("work_preference") or "Remote"
+    location = req.location or analysis.get("location") or "Remote"
+    edu_reqs = req.education_requirements if req.education_requirements is not None else (analysis.get("education_requirements") or [])
+
     # 2. Create a temporary in-memory Job object
     temp_job = Job(
-        title=analysis.get("title") or "Untitled Role",
-        description=analysis.get("description") or req.job_description,
-        required_skills=analysis.get("required_skills") or [],
-        experience_required=float(analysis.get("experience_required") or 0.0),
-        work_preference=analysis.get("work_preference") or "Remote",
-        location=analysis.get("location") or "Remote"
+        title=title,
+        description=description,
+        required_skills=required_skills,
+        experience_required=experience_required,
+        work_preference=work_preference,
+        location=location
     )
+    temp_job.education_requirements = edu_reqs
 
     # 3. Rank candidates against this job
     candidates = db.query(Candidate).all()
@@ -156,7 +184,9 @@ def generate_ranking(req: RankingGenerateRequest, db: Session = Depends(get_db))
             f"Missing skills: {missing_skills_str}. "
             f"Candidate has {candidate.experience_years or 0.0} years of experience (Required: {temp_job.experience_required or 0.0} years). "
             f"Location / preference fit: {candidate.location or 'Not Specified'} ({candidate.work_preference or 'Remote'}) vs job's {temp_job.location or 'Not Specified'} ({temp_job.work_preference or 'Remote'}). "
-            f"Fit Score details: Skills {explanation.get('skills_score') or 0.0}%, Experience {explanation.get('experience_score') or 0.0}%, Text Sim {explanation.get('text_similarity_score') or 0.0}%, Location {explanation.get('location_score') or 0.0}%."
+            f"Education Match: {explanation.get('education_score') or 0.0}%. "
+            f"Behavioral Signals Score: {explanation.get('behavioral_score') or 0.0}%. "
+            f"Fit Score details: Skills {explanation.get('skills_score') or 0.0}%, Experience {explanation.get('experience_score') or 0.0}%, Text Sim {explanation.get('text_similarity_score') or 0.0}%, Location {explanation.get('location_score') or 0.0}%, Education {explanation.get('education_score') or 0.0}%, Behavioral {explanation.get('behavioral_score') or 0.0}%."
         )
 
         ranked_results.append({

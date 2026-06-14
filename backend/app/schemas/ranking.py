@@ -33,7 +33,13 @@ class SkillGapResponse(BaseModel):
     upskilling_roadmap: List[Dict[str, Any]]
 
 class RankingGenerateRequest(BaseModel):
-    job_description: str
+    job_description: Optional[str] = None
+    title: Optional[str] = None
+    required_skills: Optional[List[str]] = None
+    experience_required: Optional[float] = None
+    education_requirements: Optional[List[str]] = None
+    work_preference: Optional[str] = None
+    location: Optional[str] = None
     limit: Optional[int] = None
 
 class CandidateRankResponse(BaseModel):
