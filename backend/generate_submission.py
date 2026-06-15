@@ -32,9 +32,15 @@ def main():
         # 5. Open DB session, query all Candidate records
         candidates = db.query(Candidate).all()
         
+        synthetic_keywords = ["AUDIT", "TEST", "DEMO", "SAMPLE"]
+        valid_candidates = [
+            c for c in candidates 
+            if not (c.candidate_id and any(kw in c.candidate_id.upper() for kw in synthetic_keywords))
+        ]
+        
         results = []
         # 6. For each candidate call calculate_match
-        for candidate in candidates:
+        for candidate in valid_candidates:
             score, explanation, tier = RankerService.calculate_match(candidate, job)
             results.append({
                 "candidate": candidate,
