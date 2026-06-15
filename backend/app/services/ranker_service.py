@@ -52,7 +52,9 @@ class RankerService:
         vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), min_df=1)
         try:
             tfidf = vectorizer.fit_transform([cand_corpus, job_corpus])
-            text_sim = float(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0])
+            raw_text_sim = float(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0])
+            # Calibration: scale up TF-IDF cosine similarity as it rarely reaches 1.0 natively
+            text_sim = min(1.0, raw_text_sim * 1.5)
         except Exception:
             text_sim = 0.0
             
@@ -224,16 +226,16 @@ class RankerService:
             elif any(swe_kw in cand_title_lower for swe_kw in ["software engineer", "developer", "programmer", "architect", "tech lead", "systems engineer", "backend", "frontend", "full stack"]):
                 # If it's a search/AI job and they lack retrieval/ranking experience, apply a slight penalty
                 if is_job_search_or_ai and not has_retrieval_experience:
-                    role_fit_multiplier = 0.85
+                    role_fit_multiplier = 0.95
                 else:
                     role_fit_multiplier = 1.0
             elif any(ops_kw in cand_title_lower for ops_kw in ["devops", "qa", "quality assurance", "test", "cloud"]):
                 if is_job_search_or_ai and not has_retrieval_experience:
-                    role_fit_multiplier = 0.65
+                    role_fit_multiplier = 0.80
                 else:
-                    role_fit_multiplier = 0.85
+                    role_fit_multiplier = 0.95
             elif "business analyst" in cand_title_lower:
-                role_fit_multiplier = 0.40
+                role_fit_multiplier = 0.60
                 
         # Apply role fit multiplier
         final_score = final_score * role_fit_multiplier
@@ -251,7 +253,7 @@ class RankerService:
             
             # If they have worked and ALL their companies are in consulting
             if cleaned_companies and cleaned_companies.issubset(consulting_companies):
-                final_score = final_score * 0.75  # 25% penalty
+                final_score = final_score * 0.90  # 10% penalty
 
         # B. Title-chasers (changing companies every 1.5 years or less)
         # Average tenure under 15 months
@@ -260,7 +262,7 @@ class RankerService:
             if total_months > 0:
                 avg_tenure_months = total_months / len(candidate.career_history)
                 if avg_tenure_months < 15.0:
-                    final_score = final_score * 0.85  # 15% penalty
+                    final_score = final_score * 0.95  # 5% penalty
 
         # C. LangChain/OpenAI wrapper only (no core ML/Search foundations)
         has_wrapper_skills = any(s in cand_skills_set for s in ["langchain", "openai", "openai embeddings"])
@@ -269,7 +271,7 @@ class RankerService:
             "ranking", "recommendation", "vector databases", "faiss", "pinecone", "milvus", "qdrant", "weaviate"
         ])
         if has_wrapper_skills and not has_core_foundations:
-            final_score = final_score * 0.80  # 20% penalty
+            final_score = final_score * 0.90  # 10% penalty
 
         # Clip score between 0 and 100
         final_score = round(max(0.0, min(100.0, final_score)), 1)
