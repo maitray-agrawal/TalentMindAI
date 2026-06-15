@@ -1,4 +1,5 @@
 import csv
+import argparse
 from pathlib import Path
 
 from app.database import SessionLocal
@@ -7,7 +8,7 @@ from app.models.job import Job
 from app.services.jd_analyzer import JDAnalyzerService
 from app.services.ranker_service import RankerService
 
-def main():
+def main(use_llm=False):
     db = SessionLocal()
     try:
         # 2. Open /backend/extracted_jd.txt with plain open() and read the text
@@ -15,8 +16,16 @@ def main():
         with open(jd_path, "r", encoding="utf-8") as f:
             jd_text = f.read()
 
-        # 3. Call JDAnalyzerService.analyze_detailed(jd_text) → store as analysis
-        analysis = JDAnalyzerService.analyze_detailed(jd_text)
+        # 3. Call parser depending on use_llm flag
+        if use_llm:
+            from app.services.groq_jd_service import GroqJDService
+            print("Using Groq LLM to parse Job Description...")
+            analysis = JDAnalyzerService.analyze_detailed(jd_text)
+            groq_analysis = GroqJDService.analyze_jd(jd_text)
+            analysis.update(groq_analysis)
+        else:
+            print("Using heuristic parser to parse Job Description...")
+            analysis = JDAnalyzerService.analyze_detailed(jd_text)
 
         # 4. Build a temporary Job object
         job = Job(
@@ -100,4 +109,7 @@ def main():
         db.close()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Generate candidate ranking submission.")
+    parser.add_argument("--llm", action="store_true", help="Use Groq LLM for Job Description parsing instead of the heuristic parser.")
+    args = parser.parse_args()
+    main(use_llm=args.llm)
