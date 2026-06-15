@@ -82,27 +82,39 @@ class GroqReranker:
             "response_format": {"type": "json_object"}
         }
 
-        try:
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
-            
-            with urllib.request.urlopen(req, timeout=10) as response:
-                if response.getcode() != 200:
-                    raise ValueError(f"HTTP response status code: {response.getcode()}")
+        import time
+        max_retries = 5
+        backoff = 2.0
+        for attempt in range(max_retries):
+            try:
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
                 
-                res_body = response.read().decode("utf-8")
-                data = json.loads(res_body)
-            
-            content = data["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            
-            score = float(parsed.get("score", 0.0))
-            reasoning = str(parsed.get("reasoning", ""))
-            return score, reasoning
-            
-        except Exception as e:
-            logger.error(f"Error evaluating candidate {candidate.candidate_id}: {e}")
-            raise e
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    if response.getcode() != 200:
+                        raise ValueError(f"HTTP response status code: {response.getcode()}")
+                    
+                    res_body = response.read().decode("utf-8")
+                    data = json.loads(res_body)
+                
+                content = data["choices"][0]["message"]["content"]
+                parsed = json.loads(content)
+                
+                score = float(parsed.get("score", 0.0))
+                reasoning = str(parsed.get("reasoning", ""))
+                return score, reasoning
+                
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < max_retries - 1:
+                    sleep_time = backoff * (2 ** attempt)
+                    logger.warning(f"Rate limited (429) evaluating candidate {candidate.candidate_id}. Retrying in {sleep_time}s...")
+                    time.sleep(sleep_time)
+                else:
+                    logger.error(f"Error evaluating candidate {candidate.candidate_id} (attempt {attempt+1}/{max_retries}): {e}")
+                    raise e
+            except Exception as e:
+                logger.error(f"Error evaluating candidate {candidate.candidate_id} (attempt {attempt+1}/{max_retries}): {e}")
+                raise e
 
     @classmethod
     def rerank_candidates(cls, candidate_results: List[Dict[str, Any]], job: Job) -> List[Dict[str, Any]]:
@@ -129,7 +141,7 @@ class GroqReranker:
         reranked_results = []
         
         # Parallelize the 50 API calls
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             future_to_cand = {
                 executor.submit(cls.evaluate_candidate, r["candidate"], job, api_key): r 
                 for r in to_rerank
