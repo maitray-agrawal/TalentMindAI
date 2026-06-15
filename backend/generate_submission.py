@@ -8,7 +8,7 @@ from app.models.job import Job
 from app.services.jd_analyzer import JDAnalyzerService
 from app.services.ranker_service import RankerService
 
-def main(use_llm=False):
+def main(use_llm=False, groq_rerank=False):
     db = SessionLocal()
     try:
         # 2. Open /backend/extracted_jd.txt with plain open() and read the text
@@ -60,6 +60,10 @@ def main(use_llm=False):
         # 7. Sort results by score descending
         results.sort(key=lambda x: x["score"], reverse=True)
 
+        if groq_rerank:
+            from app.services.groq_reranker import GroqReranker
+            results = GroqReranker.rerank_candidates(results, job)
+
         # 8. Write to /submission.csv (project root)
         output_path = Path(__file__).parent.parent / "submission.csv"
         
@@ -87,12 +91,15 @@ def main(use_llm=False):
                 matched_str = ', '.join(matched) if matched else 'None'
                 missing_str = ', '.join(missing) if missing else 'None'
                 
+                groq_note = explanation.get("groq_reasoning", "")
                 reasoning = (
                     f"{title} | {exp_years}yrs | "
                     f"Matched: {matched_str} | "
                     f"Key gaps: {missing_str} | "
                     f"Profile: {completeness}% complete, response rate: {response_rate}"
                 )
+                if groq_note:
+                    reasoning += f" | Rerank Note: {groq_note}"
                 
                 writer.writerow([candidate_id, rank, normalized_score, reasoning])
                 
@@ -111,5 +118,6 @@ def main(use_llm=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate candidate ranking submission.")
     parser.add_argument("--llm", action="store_true", help="Use Groq LLM for Job Description parsing instead of the heuristic parser.")
+    parser.add_argument("--groq-rerank", action="store_true", help="Enable Groq LLM recruiter re-ranking on the top 50 candidates.")
     args = parser.parse_args()
-    main(use_llm=args.llm)
+    main(use_llm=args.llm, groq_rerank=args.groq_rerank)
