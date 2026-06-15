@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 # Add absolute backend path
-sys.path.append("d:/TalentMindAI/backend")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.database import SessionLocal
 from app.models.candidate import Candidate
@@ -36,7 +36,7 @@ def is_ground_truth_relevant(candidate: Candidate, explanation: dict, job: Job) 
     return True
 
 def evaluate_ranking():
-    jd_path = Path("d:/TalentMindAI/dataset/[PUB] India_runs_data_and_ai_challenge/India_runs_data_and_ai_challenge/job_description.docx")
+    jd_path = Path(__file__).resolve().parent / "extracted_jd.txt"
     if not jd_path.exists():
         print(f"Error: Job description file not found at {jd_path}")
         return

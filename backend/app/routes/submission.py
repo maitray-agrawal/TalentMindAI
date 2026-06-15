@@ -116,19 +116,19 @@ def generate_submission(
         # Structure reasoning matching sample submission:
         # e.g., "HR Manager with 6.1 yrs; 9 AI core skills; response rate 0.76."
         explanation = r.explanation or {}
-        matched_skills = []
-        if isinstance(explanation, dict):
-            matched_skills = explanation.get("matched_skills", []) or []
-        num_skills = len(matched_skills)
-        
-        response_rate = 0.0
-        if candidate.redrob_signals and isinstance(candidate.redrob_signals, dict):
-            response_rate = candidate.redrob_signals.get("recruiter_response_rate", 0.0) or 0.0
-
-        title = candidate.title or "Candidate"
-        exp = candidate.experience_years or 0.0
-        
-        reasoning_str = f"{title} with {exp:.1f} yrs; {num_skills} matched skills; response rate {response_rate:.2f}."
+        signals = candidate.redrob_signals or {}
+        matched = explanation.get("matched_skills", [])
+        missing = explanation.get("missing_skills", [])[:3]
+        completeness = round(float(signals.get("profile_completeness_score", 0)), 1)
+        response_rate = round(float(signals.get("recruiter_response_rate", 0)), 2)
+        reasoning_str = (
+            f"{candidate.title or 'Unknown'} | "
+            f"{candidate.experience_years or 0}yrs exp | "
+            f"Matched: {', '.join(matched) if matched else 'None'} | "
+            f"Key gaps: {', '.join(missing) if missing else 'None'} | "
+            f"Profile: {completeness}% complete, "
+            f"response rate: {response_rate}"
+        )
         
         # Validate reasoning is populated
         if not reasoning_str.strip():

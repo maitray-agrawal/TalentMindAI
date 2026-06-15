@@ -61,7 +61,7 @@ The platform is built to ingest and process complex candidate profiles, supporti
 
 ## 🖼️ Screenshots
 
-*(Add images to a `/docs/images` folder to render)*
+*(Screenshots available as interactive HTML in `/frontend_screens/`)*
 
 *   !Dashboard *Recruiter Dashboard & KPIs*
 *   !Ranking *Explainable AI Ranking View*
@@ -127,6 +127,14 @@ TalentMindAI/
    python -m uvicorn app.main:app --reload --port 8000
    ```
    The backend API will run at `http://127.0.0.1:8000` (docs available at `/docs`).
+
+### 3. Generate Submission Output
+```bash
+    cd backend
+    python generate_submission.py
+```
+    This regenerates `submission.csv` in the project root with the 
+    correct AI-ranked candidate output.
 
 ### 2. Frontend Launch
 

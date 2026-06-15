@@ -18,11 +18,11 @@ class RankerService:
         # 1. Text Similarity using TF-IDF and Cosine Similarity
         # Combine candidate data into a single corpus string
         cand_skills_str = " ".join(candidate.skills or [])
-        cand_corpus = f"{candidate.title or ''} {cand_skills_str} {candidate.resume_text or ''}"
+        cand_corpus = f"{candidate.title or ''} {cand_skills_str}"
         
         # Combine job data into a single corpus string
         job_skills_str = " ".join(job.required_skills or [])
-        job_corpus = f"{job.title or ''} {job_skills_str} {job.description or ''}"
+        job_corpus = f"{job.title or ''} {job_skills_str}"
         
         # Check for retrieval keywords in candidate's resume/history
         retrieval_keywords = [
@@ -49,7 +49,7 @@ class RankerService:
                 has_retrieval_experience = True
                 
         # TF-IDF calculation
-        vectorizer = TfidfVectorizer(stop_words='english')
+        vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), min_df=1)
         try:
             tfidf = vectorizer.fit_transform([cand_corpus, job_corpus])
             text_sim = float(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0])

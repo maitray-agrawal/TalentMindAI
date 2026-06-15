@@ -149,27 +149,40 @@ class JDAnalyzerService:
             line_lower = line_clean.lower()
             
             # Heading Transition Checks
-            if any(h in line_lower for h in ["things you absolutely need", "required skills"]):
+            REQUIRED_MARKERS = [
+                "things you absolutely need", "required skills", "must have",
+                "hard requirements", "you must", "mandatory", "non-negotiable"
+            ]
+            PREFERRED_MARKERS = [
+                "things we'd like", "preferred skills", "nice to have",
+                "bonus", "ideal candidate", "good to have"
+            ]
+            DISQUALIFIER_MARKERS = [
+                "things we explicitly do not want", "disqualifiers",
+                "do not want", "red flag", "not suitable", "explicitly not"
+            ]
+            VIBE_MARKERS = [
+                "the vibe check", "culture fit", "cultural fit", "who you are"
+            ]
+            RESET_MARKERS = [
+                "let's be honest", "what you'd actually", "what we mean by",
+                "the skills inventory", "on location", "how to read",
+                "final note", "about the company", "about us", "compensation"
+            ]
+
+            if any(m in line_lower for m in REQUIRED_MARKERS):
                 current_section = "required"
                 continue
-            elif any(h in line_lower for h in ["things we'd like you to have", "preferred skills"]):
+            elif any(m in line_lower for m in PREFERRED_MARKERS):
                 current_section = "preferred"
                 continue
-            elif any(h in line_lower for h in ["things we explicitly do not want", "disqualifiers we actually apply"]):
+            elif any(m in line_lower for m in DISQUALIFIER_MARKERS):
                 current_section = "disqualifiers"
                 continue
-            elif any(h in line_lower for h in ["the vibe check", "culture fit"]):
+            elif any(m in line_lower for m in VIBE_MARKERS):
                 current_section = "vibe_check"
                 continue
-            elif any(h in line_lower for h in [
-                "let's be honest about this role", 
-                "what you'd actually be doing", 
-                "what we mean by", 
-                "the skills inventory", 
-                "on location, comp, and logistics",
-                "how to read between the lines",
-                "final note"
-            ]):
+            elif any(m in line_lower for m in RESET_MARKERS):
                 current_section = None
                 continue
             
