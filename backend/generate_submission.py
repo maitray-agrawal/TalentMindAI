@@ -64,6 +64,9 @@ def main(use_llm=False, groq_rerank=False):
             from app.services.groq_reranker import GroqReranker
             results = GroqReranker.rerank_candidates(results, job)
 
+        # Apply final sorting with score (normalized to 4 decimals, descending) and tie-breaking by candidate ID (ascending)
+        results.sort(key=lambda x: (-round(x["score"] / 100, 4), x["candidate"].candidate_id))
+
         # 8. Write to /submission.csv (project root)
         output_path = Path(__file__).parent.parent / "submission.csv"
         
@@ -71,7 +74,8 @@ def main(use_llm=False, groq_rerank=False):
             writer = csv.writer(csvfile)
             writer.writerow(["candidate_id", "rank", "score", "reasoning"])
             
-            for rank, result in enumerate(results, start=1):
+            # Slice results to top 100 as per challenge requirements
+            for rank, result in enumerate(results[:100], start=1):
                 candidate = result["candidate"]
                 score = result["score"]
                 explanation = result["explanation"]

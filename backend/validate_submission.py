@@ -68,9 +68,9 @@ def main():
             if not reasoning or not reasoning.strip():
                 errors.append(f"Row {row_num}: reasoning is empty")
                 
-    # fail if zero candidate rows
-    if rows_checked == 0:
-        errors.append("Error: submission.csv contains zero candidate rows")
+    # fail if not exactly 100 candidate rows
+    if rows_checked != 100:
+        errors.append(f"Error: submission.csv contains {rows_checked} rows (expected exactly 100 data rows)")
         
     # 4. Output
     if errors:

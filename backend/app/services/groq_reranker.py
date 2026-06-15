@@ -83,8 +83,10 @@ class GroqReranker:
         }
 
         import time
-        max_retries = 5
-        backoff = 2.0
+        # Respect rate limits (15 RPM) under sequential execution by sleeping 4 seconds
+        time.sleep(4.0)
+        max_retries = 6
+        backoff = 3.0
         for attempt in range(max_retries):
             try:
                 req_data = json.dumps(payload).encode("utf-8")
@@ -140,8 +142,8 @@ class GroqReranker:
 
         reranked_results = []
         
-        # Parallelize the 50 API calls
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        # Execute sequentially (max_workers=1) to prevent concurrent rate limit spikes
+        with ThreadPoolExecutor(max_workers=1) as executor:
             future_to_cand = {
                 executor.submit(cls.evaluate_candidate, r["candidate"], job, api_key): r 
                 for r in to_rerank

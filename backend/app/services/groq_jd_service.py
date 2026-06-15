@@ -67,65 +67,79 @@ class GroqJDService:
             "response_format": {"type": "json_object"}
         }
 
-        try:
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
-            
-            with urllib.request.urlopen(req, timeout=15) as response:
-                status_code = response.getcode()
-                if status_code != 200:
-                    raise ValueError(f"HTTP response status code: {status_code}")
-                
-                res_body = response.read().decode("utf-8")
-                data = json.loads(res_body)
-            
-            content = data["choices"][0]["message"]["content"]
-            parsed = json.loads(content)
-            
-            # Extract and validate fields
-            required_skills = parsed.get("required_skills", [])
-            preferred_skills = parsed.get("preferred_skills", [])
-            experience_required = parsed.get("experience_required", 0.0)
-            education_requirements = parsed.get("education_requirements", [])
-            disqualifiers = parsed.get("disqualifiers", [])
-            
-            # Type correction/coercion
-            if not isinstance(required_skills, list):
-                required_skills = [str(required_skills)] if required_skills else []
-            else:
-                required_skills = [str(s) for s in required_skills]
-                
-            if not isinstance(preferred_skills, list):
-                preferred_skills = [str(preferred_skills)] if preferred_skills else []
-            else:
-                preferred_skills = [str(s) for s in preferred_skills]
-                
+        import time
+        max_retries = 5
+        backoff = 3.0
+        for attempt in range(max_retries):
             try:
-                experience_required = float(experience_required)
-            except (ValueError, TypeError):
-                experience_required = 0.0
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
                 
-            if not isinstance(education_requirements, list):
-                education_requirements = [str(education_requirements)] if education_requirements else []
-            else:
-                education_requirements = [str(e) for e in education_requirements]
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    status_code = response.getcode()
+                    if status_code != 200:
+                        raise ValueError(f"HTTP response status code: {status_code}")
+                    
+                    res_body = response.read().decode("utf-8")
+                    data = json.loads(res_body)
                 
-            if not isinstance(disqualifiers, list):
-                disqualifiers = [str(disqualifiers)] if disqualifiers else []
-            else:
-                disqualifiers = [str(d) for d in disqualifiers]
+                content = data["choices"][0]["message"]["content"]
+                parsed = json.loads(content)
                 
-            return {
-                "required_skills": required_skills,
-                "preferred_skills": preferred_skills,
-                "experience_required": experience_required,
-                "education_requirements": education_requirements,
-                "disqualifiers": disqualifiers
-            }
-            
-        except Exception as e:
-            logger.error(f"Error calling Groq API or parsing response: {e}. Falling back to heuristic parser.")
-            return GroqJDService._fallback(text)
+                # Extract and validate fields
+                required_skills = parsed.get("required_skills", [])
+                preferred_skills = parsed.get("preferred_skills", [])
+                experience_required = parsed.get("experience_required", 0.0)
+                education_requirements = parsed.get("education_requirements", [])
+                disqualifiers = parsed.get("disqualifiers", [])
+                
+                # Type correction/coercion
+                if not isinstance(required_skills, list):
+                    required_skills = [str(required_skills)] if required_skills else []
+                else:
+                    required_skills = [str(s) for s in required_skills]
+                    
+                if not isinstance(preferred_skills, list):
+                    preferred_skills = [str(preferred_skills)] if preferred_skills else []
+                else:
+                    preferred_skills = [str(s) for s in preferred_skills]
+                    
+                try:
+                    experience_required = float(experience_required)
+                except (ValueError, TypeError):
+                    experience_required = 0.0
+                    
+                if not isinstance(education_requirements, list):
+                    education_requirements = [str(education_requirements)] if education_requirements else []
+                else:
+                    education_requirements = [str(e) for e in education_requirements]
+                    
+                if not isinstance(disqualifiers, list):
+                    disqualifiers = [str(disqualifiers)] if disqualifiers else []
+                else:
+                    disqualifiers = [str(d) for d in disqualifiers]
+                    
+                return {
+                    "required_skills": required_skills,
+                    "preferred_skills": preferred_skills,
+                    "experience_required": experience_required,
+                    "education_requirements": education_requirements,
+                    "disqualifiers": disqualifiers
+                }
+                
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and attempt < max_retries - 1:
+                    sleep_time = backoff * (2 ** attempt)
+                    logger.warning(f"Rate limited (429) parsing JD. Retrying in {sleep_time}s...")
+                    time.sleep(sleep_time)
+                else:
+                    logger.error(f"Error calling Groq API (attempt {attempt+1}/{max_retries}): {e}. Falling back.")
+                    if attempt == max_retries - 1:
+                        return GroqJDService._fallback(text)
+            except Exception as e:
+                logger.error(f"Error calling Groq API (attempt {attempt+1}/{max_retries}): {e}. Falling back.")
+                if attempt == max_retries - 1:
+                    return GroqJDService._fallback(text)
 
     @staticmethod
     def _fallback(text: str) -> Dict[str, Any]:
