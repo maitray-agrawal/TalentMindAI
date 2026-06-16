@@ -104,7 +104,7 @@ async function checkApiConnection() {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/jobs`);
+        const res = await fetch(`${API_BASE}/jobs/`);
         if (res.ok) {
             indicator.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mr-4 bg-tertiary/10 text-tertiary border border-tertiary/20';
             indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span> API: CONNECTED';
@@ -171,14 +171,14 @@ function parseMarkdown(text) {
 async function initDashboard() {
     setupJdIntelligence();
     try {
-        const [cRes, jRes] = await Promise.all([
-            fetch(`${API_BASE}/candidates`),
-            fetch(`${API_BASE}/jobs`)
+        const [statsRes, jRes] = await Promise.all([
+            fetch(`${API_BASE}/candidates/stats`),
+            fetch(`${API_BASE}/jobs/`)
         ]);
         
-        if (!cRes.ok || !jRes.ok) return;
+        if (!statsRes.ok || !jRes.ok) return;
 
-        const candidates = await cRes.json();
+        const stats = await statsRes.json();
         const jobs = await jRes.json();
 
         // Update KPIs
@@ -260,15 +260,15 @@ async function initDashboard() {
 }
 
 // --- 2. CANDIDATE SEARCH ---
-let allCandidates = [];
+let currentPage = 1;
+const pageSize = 12;
+let totalCandidates = 0;
+let selectedForComparison = new Set();
+
 async function initCandidateSearch() {
     try {
-        const res = await fetch(`${API_BASE}/candidates`);
-        if (!res.ok) return;
-        allCandidates = await res.json();
-        
         // Populate standard skills filter panel dynamically
-        setupSkillsFilter();
+        await setupSkillsFilter();
         
         // Setup slider & search inputs
         const searchInput = document.querySelector('header input') || document.querySelector('main input');
@@ -281,64 +281,91 @@ async function initCandidateSearch() {
             expSlider.value = 0;
             expSlider.addEventListener('input', () => {
                 if (expDisplay) expDisplay.textContent = `${expSlider.value}+ Yrs`;
-                filterCandidates();
+                currentPage = 1;
+                fetchAndRenderCandidates();
             });
         }
 
         if (searchInput) {
-            searchInput.addEventListener('input', filterCandidates);
+            let timeout = null;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    currentPage = 1;
+                    fetchAndRenderCandidates();
+                }, 300);
+            });
         }
 
         // Connect work preference check boxes
         document.querySelectorAll('input[type="checkbox"]').forEach(box => {
-            box.addEventListener('change', filterCandidates);
+            box.addEventListener('change', () => {
+                currentPage = 1;
+                fetchAndRenderCandidates();
+            });
         });
 
-        // Initial render
-        renderCandidateCards(allCandidates);
+        // Initial fetch and render
+        await fetchAndRenderCandidates();
 
     } catch (err) {
         console.error("Candidate search init failed", err);
     }
 }
 
-function setupSkillsFilter() {
+async function setupSkillsFilter() {
     const filterContainer = document.getElementById('skills-filter-container');
     if (!filterContainer) return;
     
-    // Extract unique skills from all candidates
-    const allSkills = new Set();
-    allCandidates.forEach(c => c.skills?.forEach(s => allSkills.add(s)));
-    
-    filterContainer.innerHTML = '';
-    allSkills.forEach(skill => {
-        const btn = document.createElement('button');
-        btn.className = 'px-3 py-1 rounded-full text-xs font-medium bg-white/5 border border-white/10 hover:border-primary/40 text-on-surface-variant transition-all';
-        btn.textContent = skill;
-        btn.addEventListener('click', () => {
-            btn.classList.toggle('bg-primary/20');
-            btn.classList.toggle('text-primary');
-            btn.classList.toggle('border-primary/50');
-            filterCandidates();
-        });
-        filterContainer.appendChild(btn);
-    });
+    try {
+        const res = await fetch(`${API_BASE}/candidates/stats`);
+        if (!res.ok) return;
+        const stats = await res.json();
+        
+        filterContainer.innerHTML = '';
+        if (stats.top_skills && stats.top_skills.length > 0) {
+            stats.top_skills.forEach(item => {
+                const skill = item.skill;
+                const btn = document.createElement('button');
+                btn.className = 'px-3 py-1 rounded-full text-xs font-medium bg-white/5 border border-white/10 hover:border-primary/40 text-on-surface-variant transition-all';
+                btn.textContent = skill;
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('bg-primary/20');
+                    btn.classList.toggle('text-primary');
+                    btn.classList.toggle('border-primary/50');
+                    currentPage = 1; // reset page on filter change
+                    fetchAndRenderCandidates();
+                });
+                filterContainer.appendChild(btn);
+            });
+        }
+    } catch (e) {
+        console.error("Failed to load skills for filter", e);
+    }
 }
 
-function filterCandidates() {
+async function fetchAndRenderCandidates() {
+    const container = document.getElementById('candidates-grid');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="col-span-full py-16 text-center text-outline">
+            <span class="material-symbols-outlined animate-spin text-4xl mb-2">sync</span>
+            <p>Searching candidate database...</p>
+        </div>
+    `;
+
     const searchInput = document.querySelector('header input') || document.querySelector('main input');
-    const query = searchInput ? searchInput.value.toLowerCase() : '';
+    const query = searchInput ? searchInput.value.trim() : '';
     
     const expSlider = document.querySelector('input[type="range"]');
     const minExp = expSlider ? parseInt(expSlider.value) : 0;
 
-    // Get active skills
     const activeSkills = [];
     document.querySelectorAll('#skills-filter-container button.text-primary').forEach(btn => {
-        activeSkills.push(btn.textContent.toLowerCase());
+        activeSkills.push(btn.textContent.trim());
     });
 
-    // Get active work preferences
     const preferences = [];
     document.querySelectorAll('input[type="checkbox"]:checked').forEach(box => {
         const labelText = box.nextElementSibling?.textContent.toLowerCase() || '';
@@ -347,26 +374,141 @@ function filterCandidates() {
         if (labelText.includes('onsite')) preferences.push('onsite');
     });
 
-    const filtered = allCandidates.filter(c => {
-        const matchesQuery = c.name.toLowerCase().includes(query) || 
-                             c.title.toLowerCase().includes(query) || 
-                             c.skills.some(s => s.toLowerCase().includes(query));
-        const matchesExp = c.experience_years >= minExp;
-        const matchesSkills = activeSkills.every(s => c.skills.map(sk => sk.toLowerCase()).includes(s));
-        
-        let matchesPref = true;
-        if (preferences.length > 0) {
-            matchesPref = preferences.includes(c.work_preference.toLowerCase());
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (minExp > 0) params.append('min_experience', minExp);
+    if (activeSkills.length > 0) params.append('skill', activeSkills.join(','));
+    if (preferences.length === 1) {
+        const capitalizedPref = preferences[0].charAt(0).toUpperCase() + preferences[0].slice(1);
+        params.append('work_preference', capitalizedPref);
+    }
+
+    const offset = (currentPage - 1) * pageSize;
+    params.append('limit', pageSize);
+    params.append('offset', offset);
+
+    try {
+        const url = `${API_BASE}/candidates/?${params.toString()}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`API returned status ${res.status}`);
         }
 
-        return matchesQuery && matchesExp && matchesSkills && matchesPref;
-    });
+        const candidates = await res.json();
+        
+        const totalCountHeader = res.headers.get('X-Total-Count');
+        if (totalCountHeader !== null) {
+            totalCandidates = parseInt(totalCountHeader, 10);
+        } else {
+            if (currentPage === 1 && candidates.length < pageSize) {
+                totalCandidates = candidates.length;
+            } else {
+                totalCandidates = 100000;
+            }
+        }
 
-    renderCandidateCards(filtered);
+        renderCandidateCards(candidates);
+        renderPagination();
+
+    } catch (e) {
+        console.error("Error fetching candidates", e);
+        container.innerHTML = `
+            <div class="col-span-full py-16 text-center text-on-surface-variant/60">
+                <span class="material-symbols-outlined text-5xl mb-4 font-bold text-error">error</span>
+                <p>Failed to search candidates. Please check backend connection.</p>
+            </div>
+        `;
+    }
 }
 
-// Compare selected candidates state
-let selectedForComparison = new Set();
+function renderPagination() {
+    const pagContainer = document.getElementById('pagination-container');
+    if (!pagContainer) return;
+
+    const totalPages = Math.max(1, Math.ceil(totalCandidates / pageSize));
+    pagContainer.innerHTML = '';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 disabled:opacity-30 transition-all';
+    prevBtn.innerHTML = '<span class="material-symbols-outlined">chevron_left</span>';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            fetchAndRenderCandidates();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+    pagContainer.appendChild(prevBtn);
+
+    const numContainer = document.createElement('div');
+    numContainer.className = 'flex gap-2';
+
+    const range = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+        for (let i = 1; i <= totalPages; i++) range.push(i);
+    } else {
+        range.push(1);
+        if (currentPage > 3) {
+            range.push('...');
+        }
+        
+        const start = Math.max(2, currentPage - 1);
+        const end = Math.min(totalPages - 1, currentPage + 1);
+        
+        for (let i = start; i <= end; i++) {
+            if (!range.includes(i)) range.push(i);
+        }
+        
+        if (currentPage < totalPages - 2) {
+            range.push('...');
+        }
+        if (!range.includes(totalPages)) {
+            range.push(totalPages);
+        }
+    }
+
+    range.forEach(p => {
+        if (p === '...') {
+            const span = document.createElement('span');
+            span.className = 'w-10 h-10 flex items-center justify-center text-on-surface-variant';
+            span.textContent = '...';
+            numContainer.appendChild(span);
+        } else {
+            const btn = document.createElement('button');
+            const isCurrent = p === currentPage;
+            btn.className = isCurrent 
+                ? 'w-10 h-10 rounded-full bg-primary text-on-primary font-mono-data font-bold shadow-lg shadow-primary/20 transition-all'
+                : 'w-10 h-10 rounded-full hover:bg-white/5 text-on-surface-variant font-mono-data transition-all';
+            btn.textContent = p;
+            btn.addEventListener('click', () => {
+                if (currentPage !== p) {
+                    currentPage = p;
+                    fetchAndRenderCandidates();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+            numContainer.appendChild(btn);
+        }
+    });
+
+    pagContainer.appendChild(numContainer);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 disabled:opacity-30 transition-all';
+    nextBtn.innerHTML = '<span class="material-symbols-outlined">chevron_right</span>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            fetchAndRenderCandidates();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+    pagContainer.appendChild(nextBtn);
+}
 
 function renderCandidateCards(candidates) {
     const container = document.getElementById('candidates-grid');
@@ -480,7 +622,7 @@ async function initCandidateRanking() {
     if (!select) return;
 
     try {
-        const res = await fetch(`${API_BASE}/jobs`);
+        const res = await fetch(`${API_BASE}/jobs/`);
         if (!res.ok) return;
         const jobs = await res.json();
         window.allJobs = jobs;
@@ -693,7 +835,7 @@ async function initCandidateDetails() {
     try {
         const [cRes, jRes] = await Promise.all([
             fetch(`${API_BASE}/candidates/${candId}`),
-            fetch(`${API_BASE}/jobs`)
+            fetch(`${API_BASE}/jobs/`)
         ]);
 
         if (!cRes.ok || !jRes.ok) {
@@ -790,7 +932,7 @@ async function loadSkillGapSection(candId, jobId) {
     `;
 
     try {
-        const res = await fetch(`${API_BASE}/candidates/${candId}/skill-gap/${jobId}`);
+        const res = await fetch(`${API_BASE}/ranking/candidate/${candId}/skill-gap/${jobId}`);
         if (!res.ok) return;
         const gap = await res.json();
 
@@ -1093,7 +1235,7 @@ async function initSkillGapAnalysis() {
         const [cRes, jRes, gapRes] = await Promise.all([
             fetch(`${API_BASE}/candidates/${candId}`),
             fetch(`${API_BASE}/jobs/${jobId}`),
-            fetch(`${API_BASE}/candidates/${candId}/skill-gap/${jobId}`)
+            fetch(`${API_BASE}/ranking/candidate/${candId}/skill-gap/${jobId}`)
         ]);
 
         if (!cRes.ok || !jRes.ok || !gapRes.ok) return;
@@ -1176,8 +1318,8 @@ async function initRecruiterCopilot() {
     // Load contexts into dropdowns
     try {
         const [cRes, jRes] = await Promise.all([
-            fetch(`${API_BASE}/candidates`),
-            fetch(`${API_BASE}/jobs`)
+            fetch(`${API_BASE}/candidates/?limit=50`),
+            fetch(`${API_BASE}/jobs/`)
         ]);
 
         if (cRes.ok && candSelect) {
@@ -1510,7 +1652,7 @@ async function saveAnalyzedJob() {
     };
 
     try {
-        const response = await fetch(`${API_BASE}/jobs`, {
+        const response = await fetch(`${API_BASE}/jobs/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
@@ -143,7 +143,10 @@ def read_candidates(
     status: Optional[str] = None,
     min_experience: Optional[float] = None,
     work_preference: Optional[str] = None,
-    db: Session = Depends(get_db)
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    response: Response = None
 ):
     query = db.query(Candidate)
     
@@ -159,16 +162,23 @@ def read_candidates(
     if min_experience:
         query = query.filter(Candidate.experience_years >= min_experience)
         
-    candidates = query.all()
-    
     if skill:
-        skill_lower = skill.lower()
-        candidates = [
-            c for c in candidates 
-            if any(skill_lower in (s or "").lower() for s in (c.skills or []))
-        ]
-        
-    return candidates
+        for s in skill.split(","):
+            s_clean = s.strip()
+            if s_clean:
+                query = query.filter(Candidate.skills.like(f'%"{s_clean}"%'))
+                
+    if response is not None:
+        total_count = query.count()
+        response.headers["X-Total-Count"] = str(total_count)
+        response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
+                
+    # Handle Query defaults when called directly in Python tests
+    from fastapi.params import Query as QueryParam
+    actual_limit = limit.default if isinstance(limit, QueryParam) else limit
+    actual_offset = offset.default if isinstance(offset, QueryParam) else offset
+    
+    return query.offset(actual_offset).limit(actual_limit).all()
 
 @router.get("/{candidate_id}", response_model=CandidateInDB)
 def read_candidate(candidate_id: int, db: Session = Depends(get_db)):

@@ -129,7 +129,7 @@ class SubmissionTestCase(unittest.TestCase):
             reasoning = row["reasoning"]
             self.assertTrue(len(reasoning) > 0)
             self.assertIn("yrs", reasoning)
-            self.assertIn("skills", reasoning)
+            self.assertIn("Matched", reasoning)
             self.assertIn("response rate", reasoning)
 
 if __name__ == "__main__":
