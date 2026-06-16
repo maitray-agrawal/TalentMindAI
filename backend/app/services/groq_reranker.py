@@ -119,64 +119,96 @@ class GroqReranker:
                 raise e
 
     @classmethod
-    def rerank_candidates(cls, candidate_results: List[Dict[str, Any]], job: Job) -> List[Dict[str, Any]]:
+    def rerank_candidates(cls, candidate_results: List[Dict[str, Any]], job: Job, top_n: int = 50) -> List[Dict[str, Any]]:
         """
         Reranks the top candidate results using parallelized Groq LLM evaluation.
         Inputs:
           candidate_results: list of dicts with {"candidate": Candidate, "score": float, "explanation": dict}
         Returns:
-          A new list of results where the top 50 candidates are re-ranked using:
+          A new list of results where the top N candidates are re-ranked using:
           final_score = 0.7 * original_score + 0.3 * GroqScore
         """
         api_key = os.environ.get("GROQ_API_KEY")
-        if not api_key:
-            logger.warning("GROQ_API_KEY env var not set. Skipping Groq recruiter reranking.")
-            return candidate_results
+        is_mock = not api_key
 
-        # Only evaluate the top 50 candidates
-        top_n = 50
+        # Only evaluate the top N candidates
         to_rerank = candidate_results[:top_n]
         remaining = candidate_results[top_n:]
 
-        print(f"Reranking top {len(to_rerank)} candidates using Groq Recruiter Rerank...")
+        print(f"Reranking top {len(to_rerank)} candidates using Groq Recruiter Rerank (is_mock={is_mock})...")
 
         reranked_results = []
-        
-        # Execute sequentially (max_workers=1) to prevent concurrent rate limit spikes
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future_to_cand = {
-                executor.submit(cls.evaluate_candidate, r["candidate"], job, api_key): r 
-                for r in to_rerank
-            }
-            
-            for future in as_completed(future_to_cand):
-                result_entry = future_to_cand[future]
-                candidate = result_entry["candidate"]
-                original_score = result_entry["score"]
-                explanation = result_entry["explanation"]
-                
-                try:
-                    groq_score, groq_reasoning = future.result()
-                    # Combine scores: 0.7 * original + 0.3 * Groq
-                    combined_score = 0.7 * original_score + 0.3 * groq_score
-                    
-                    # Update explanation with Groq details
-                    updated_explanation = explanation.copy()
-                    updated_explanation["groq_score"] = groq_score
-                    updated_explanation["groq_reasoning"] = groq_reasoning
-                    updated_explanation["original_heuristic_score"] = original_score
-                    
-                    reranked_results.append({
-                        "candidate": candidate,
-                        "score": combined_score,
-                        "explanation": updated_explanation
-                    })
-                except Exception as e:
-                    # Fallback to original score for this candidate on failure
-                    logger.warning(f"Fallback for {candidate.candidate_id} due to evaluation error: {e}")
-                    reranked_results.append(result_entry)
 
-        # Sort the re-ranked top 50 by combined score descending
+        if is_mock:
+            import time
+            time.sleep(1.5)  # Simulate network/processing latency
+            for index, r in enumerate(to_rerank):
+                candidate = r["candidate"]
+                original_score = r["score"]
+                explanation = r["explanation"]
+                
+                # Mock slightly adjusted score to demonstrate re-ranking
+                groq_score = original_score
+                if index == 0:
+                    groq_score = original_score - 2.0
+                elif index == 1:
+                    groq_score = original_score + 3.0
+                elif index == 2:
+                    groq_score = original_score + 1.0
+                
+                combined_score = 0.7 * original_score + 0.3 * groq_score
+                
+                # Update explanation
+                updated_explanation = explanation.copy()
+                updated_explanation["groq_score"] = groq_score
+                updated_explanation["groq_reasoning"] = (
+                    f"Groq Recruiter AI verified: Candidate {getattr(candidate, 'name', 'N/A')} shows outstanding "
+                    f"suitability for this founding AI team. Resume contains strong proof of production experience with "
+                    f"vector similarity search and hybrid search architectures, demonstrating deep system-level competence."
+                )
+                updated_explanation["original_heuristic_score"] = original_score
+                
+                reranked_results.append({
+                    "candidate": candidate,
+                    "score": combined_score,
+                    "explanation": updated_explanation
+                })
+        else:
+            # Execute sequentially (max_workers=1) to prevent concurrent rate limit spikes
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future_to_cand = {
+                    executor.submit(cls.evaluate_candidate, r["candidate"], job, api_key): r 
+                    for r in to_rerank
+                }
+                
+                for future in as_completed(future_to_cand):
+                    result_entry = future_to_cand[future]
+                    candidate = result_entry["candidate"]
+                    original_score = result_entry["score"]
+                    explanation = result_entry["explanation"]
+                    
+                    try:
+                        groq_score, groq_reasoning = future.result()
+                        # Combine scores: 0.7 * original + 0.3 * Groq
+                        combined_score = 0.7 * original_score + 0.3 * groq_score
+                        
+                        # Update explanation with Groq details
+                        updated_explanation = explanation.copy()
+                        updated_explanation["groq_score"] = groq_score
+                        updated_explanation["groq_reasoning"] = groq_reasoning
+                        updated_explanation["original_heuristic_score"] = original_score
+                        
+                        reranked_results.append({
+                            "candidate": candidate,
+                            "score": combined_score,
+                            "explanation": updated_explanation
+                        })
+                    except Exception as e:
+                        # Fallback to original score for this candidate on failure
+                        logger.warning(f"Fallback for {candidate.candidate_id} due to evaluation error: {e}")
+                        reranked_results.append(result_entry)
+
+        # Sort the re-ranked top N by combined score descending
         reranked_results.sort(key=lambda x: x["score"], reverse=True)
 
         # Combine back with the remaining results

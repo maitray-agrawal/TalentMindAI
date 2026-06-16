@@ -8,6 +8,19 @@ from app.models.job import Job
 from app.config import settings
 
 class RankerService:
+    _vectorizer_cache = {}
+
+    @classmethod
+    def get_job_vectorizer(cls, job: Job):
+        job_id = getattr(job, "id", None) or f"{job.title}_{'-'.join(job.required_skills or [])}"
+        if job_id not in cls._vectorizer_cache:
+            job_skills_str = " ".join(job.required_skills or [])
+            job_corpus = f"{job.title or ''} {job_skills_str}"
+            vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), min_df=1)
+            job_tfidf = vectorizer.fit_transform([job_corpus])
+            cls._vectorizer_cache[job_id] = (vectorizer, job_tfidf)
+        return cls._vectorizer_cache[job_id]
+
     @staticmethod
     def calculate_match(candidate: Candidate, job: Job) -> Tuple[float, Dict[str, Any], str]:
         # Clean inputs
@@ -19,10 +32,6 @@ class RankerService:
         # Combine candidate data into a single corpus string
         cand_skills_str = " ".join(candidate.skills or [])
         cand_corpus = f"{candidate.title or ''} {cand_skills_str}"
-        
-        # Combine job data into a single corpus string
-        job_skills_str = " ".join(job.required_skills or [])
-        job_corpus = f"{job.title or ''} {job_skills_str}"
         
         # Check for retrieval keywords in candidate's resume/history
         retrieval_keywords = [
@@ -48,11 +57,11 @@ class RankerService:
             if not any(nt in cand_title_lower for nt in non_tech_kws):
                 has_retrieval_experience = True
                 
-        # TF-IDF calculation
-        vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), min_df=1)
+        # TF-IDF calculation using cached job vectorizer
         try:
-            tfidf = vectorizer.fit_transform([cand_corpus, job_corpus])
-            raw_text_sim = float(cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0])
+            vectorizer, job_tfidf = RankerService.get_job_vectorizer(job)
+            cand_tfidf = vectorizer.transform([cand_corpus])
+            raw_text_sim = float(cosine_similarity(cand_tfidf, job_tfidf)[0][0])
             # Calibration: scale up TF-IDF cosine similarity as it rarely reaches 1.0 natively
             text_sim = min(1.0, raw_text_sim * 1.5)
         except Exception:

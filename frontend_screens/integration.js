@@ -185,7 +185,7 @@ async function initDashboard() {
         const kpiContainers = document.querySelectorAll('.font-headline-lg');
         if (kpiContainers.length >= 3) {
             // Total Candidates
-            kpiContainers[0].textContent = candidates.length.toLocaleString();
+            kpiContainers[0].textContent = stats.total_candidates.toLocaleString();
             // Active Roles
             kpiContainers[1].textContent = jobs.length.toLocaleString();
             
@@ -655,6 +655,54 @@ async function initCandidateRanking() {
             }
         });
 
+        // Groq Rerank button setup
+        const groqBtn = document.getElementById('btn-groq-rerank');
+        if (groqBtn) {
+            groqBtn.addEventListener('click', async () => {
+                const jobId = select.value;
+                if (!jobId) {
+                    showToast('Please select a job role first.', 'error');
+                    return;
+                }
+                
+                // Show loading state
+                groqBtn.disabled = true;
+                const originalHTML = groqBtn.innerHTML;
+                groqBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[18px]">sync</span> Reranking...`;
+                
+                // Show loading on table
+                const tableContainer = document.getElementById('rankings-list-container') || document.querySelector('main tbody');
+                if (tableContainer) {
+                    tableContainer.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-12 text-center text-outline">
+                                <span class="material-symbols-outlined animate-spin text-3xl mb-2 text-primary">psychology</span>
+                                <p class="text-primary font-bold">Groq AI is evaluating resume profiles & job alignment...</p>
+                                <p class="text-xs text-outline mt-1">Applying LLM criteria matching & reranking weights...</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                try {
+                    showToast('Triggering Groq AI Recruiter evaluation...', 'info');
+                    const rerankRes = await fetch(`${API_BASE}/ranking/rerank/${jobId}`, { method: 'POST' });
+                    if (rerankRes.ok) {
+                        showToast('Groq AI Reranking complete! Recruiter consensus applied.');
+                        await loadRankings(jobId);
+                    } else {
+                        showToast('Failed to rerank using Groq.', 'error');
+                    }
+                } catch (err) {
+                    console.error("Groq rerank failed", err);
+                    showToast('Error contacting reranker service.', 'error');
+                } finally {
+                    groqBtn.disabled = false;
+                    groqBtn.innerHTML = originalHTML;
+                }
+            });
+        }
+
     } catch (e) {
         console.error("Ranking init failed", e);
     }
@@ -733,7 +781,13 @@ async function loadRankings(jobId) {
                                 <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-tertiary rounded-full border-2 border-surface shadow-lg"></div>
                             </div>
                             <div>
-                                <h4 class="font-bold text-on-surface text-body-md hover:text-primary cursor-pointer" onclick="window.location.href='candidate_details.html?id=${r.candidate_id}&job_id=${jobId}'">${r.candidate.name}</h4>
+                                <h4 class="font-bold text-on-surface text-body-md hover:text-primary cursor-pointer flex items-center gap-1" onclick="window.location.href='candidate_details.html?id=${r.candidate_id}&job_id=${jobId}'">
+                                    ${r.candidate.name}
+                                    ${r.explanation?.groq_score ? `
+                                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[9px] font-bold border border-primary/30 animate-pulse-slow" title="${r.explanation.groq_reasoning || ''}">
+                                        <span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">bolt</span> Groq AI
+                                    </span>` : ''}
+                                </h4>
                                 <p class="text-on-surface-variant/60 text-[12px]">${r.candidate.title}</p>
                             </div>
                         </div>
@@ -781,7 +835,13 @@ async function loadRankings(jobId) {
                         <span class="text-xl font-bold font-mono text-outline">#${index + 1}</span>
                         <img class="w-16 h-16 rounded-xl object-cover" src="${r.candidate.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuBT0NpLK060VPqvHHfKqSM591wQsyX0wC7wEB5wvoRdsoRdamqgXYFH0gJhUHdvQWx5cE4HgWiGNUWWq3xepl4KCzThVL1MpNTOPjQ1NBKYbfRWoT8186Bdbu8pctaSA8gVo4tENwDGlYfp6Yq8Wc8FJA2uDuojrf4FpbNU_GSiYDr_s0f4MJDu73q04MOFgQK7LvTSIY-r4qb-lJCDFElsS1zQCpCIcdnpNzPx8ITAxy7cISBR_J2BKBoZrpcFuTb3Iwz7Bjr4NfAI'}" alt=""/>
                         <div>
-                            <h3 class="font-headline-md text-on-surface cursor-pointer hover:text-primary" onclick="window.location.href='candidate_details.html?id=${r.candidate_id}&job_id=${jobId}'">${r.candidate.name}</h3>
+                            <h3 class="font-headline-md text-on-surface cursor-pointer hover:text-primary flex items-center gap-1" onclick="window.location.href='candidate_details.html?id=${r.candidate_id}&job_id=${jobId}'">
+                                ${r.candidate.name}
+                                ${r.explanation?.groq_score ? `
+                                <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[9px] font-bold border border-primary/30 animate-pulse-slow" title="${r.explanation.groq_reasoning || ''}">
+                                    <span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">bolt</span> Groq AI
+                                </span>` : ''}
+                            </h3>
                             <p class="text-xs text-outline">${r.candidate.title} • ${r.candidate.location}</p>
                             <div class="flex gap-1.5 mt-2">
                                 ${r.candidate.skills.slice(0, 3).map(s => `<span class="bg-white/5 px-2 py-0.5 rounded text-[10px] text-on-surface-variant">${s}</span>`).join('')}

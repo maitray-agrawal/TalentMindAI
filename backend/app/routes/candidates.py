@@ -153,12 +153,16 @@ def read_candidates(
     if q:
         query = query.filter(
             (Candidate.name.ilike(f"%{q}%")) | 
-            (Candidate.title.ilike(f"%{q}%"))
+            (Candidate.title.ilike(f"%{q}%")) |
+            (Candidate.resume_text.ilike(f"%{q}%"))
         )
     if status:
         query = query.filter(Candidate.status == status)
     if work_preference:
-        query = query.filter(Candidate.work_preference == work_preference)
+        prefs = [p.strip() for p in work_preference.split(",") if p.strip()]
+        if prefs:
+            title_prefs = [p.capitalize() for p in prefs]
+            query = query.filter(Candidate.work_preference.in_(title_prefs))
     if min_experience:
         query = query.filter(Candidate.experience_years >= min_experience)
         

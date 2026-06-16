@@ -212,3 +212,68 @@ def generate_ranking(req: RankingGenerateRequest, db: Session = Depends(get_db))
 
     return final_results
 
+
+@router.post("/rerank/{job_id}", response_model=List[RankingWithCandidate])
+def rerank_job_rankings(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Get existing rankings
+    rankings = db.query(Ranking).filter(Ranking.job_id == job_id).order_by(Ranking.match_score.desc()).all()
+    if not rankings:
+        # Generate them first
+        rankings = calculate_job_rankings(job_id=job_id, db=db)
+    
+    if not rankings:
+        return []
+
+    # Map rankings to the structure needed by GroqReranker
+    candidate_results = []
+    for r in rankings:
+        candidate_results.append({
+            "candidate": r.candidate,
+            "score": r.match_score,
+            "explanation": r.explanation
+        })
+
+    # Call GroqReranker for the top 5 candidates
+    from app.services.groq_reranker import GroqReranker
+    reranked = GroqReranker.rerank_candidates(candidate_results, job, top_n=5)
+
+    # Save reranked results back to the database
+    updated_rankings = []
+    for item in reranked:
+        cand = item["candidate"]
+        score = item["score"]
+        explanation = item["explanation"]
+        
+        # Determine tier
+        if score >= 85.0:
+            tier = "Top Match"
+        elif score >= 70.0:
+            tier = "Strong Match"
+        elif score >= 50.0:
+            tier = "Good Match"
+        else:
+            tier = "Potentially Unsuitable"
+
+        # Update in database
+        ranking = db.query(Ranking).filter(
+            Ranking.candidate_id == cand.id,
+            Ranking.job_id == job.id
+        ).first()
+
+        if ranking:
+            ranking.match_score = score
+            ranking.explanation = explanation
+            ranking.tier = tier
+            db.commit()
+            db.refresh(ranking)
+            updated_rankings.append(ranking)
+
+    # Sort the final list by score descending
+    updated_rankings.sort(key=lambda x: x.match_score, reverse=True)
+    return updated_rankings
+
+
