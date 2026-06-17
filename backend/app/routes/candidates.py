@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from typing import List, Optional
 from collections import Counter
 from app.database import get_db
@@ -36,7 +36,19 @@ def import_candidates(
 
 @router.get("/stats")
 def get_candidate_stats(db: Session = Depends(get_db)):
-    total = db.query(func.count(Candidate.id)).scalar() or 0
+    # Combine scalar count and avg queries into a single query to reduce database scans from 8 to 1
+    stats_query = db.query(
+        func.count(Candidate.id),
+        func.avg(Candidate.experience_years),
+        func.sum(case((Candidate.experience_years < 3.0, 1), else_=0)),
+        func.sum(case(((Candidate.experience_years >= 3.0) & (Candidate.experience_years < 7.0), 1), else_=0)),
+        func.sum(case(((Candidate.experience_years >= 7.0) & (Candidate.experience_years < 12.0), 1), else_=0)),
+        func.sum(case((Candidate.experience_years >= 12.0, 1), else_=0)),
+        func.sum(case((func.json_extract(Candidate.redrob_signals, '$.open_to_work_flag') == 1, 1), else_=0)),
+        func.avg(func.json_extract(Candidate.redrob_signals, '$.profile_completeness_score'))
+    ).first()
+
+    total = stats_query[0] or 0
     if total == 0:
         return {
             "total_candidates": 0,
@@ -49,29 +61,22 @@ def get_candidate_stats(db: Session = Depends(get_db)):
             "average_profile_completeness": 0.0
         }
 
-    # Experience
-    avg_exp = db.query(func.avg(Candidate.experience_years)).scalar() or 0.0
-    
-    # Experience ranges
-    entry = db.query(func.count(Candidate.id)).filter(Candidate.experience_years < 3.0).scalar() or 0
-    mid = db.query(func.count(Candidate.id)).filter((Candidate.experience_years >= 3.0) & (Candidate.experience_years < 7.0)).scalar() or 0
-    senior = db.query(func.count(Candidate.id)).filter((Candidate.experience_years >= 7.0) & (Candidate.experience_years < 12.0)).scalar() or 0
-    principal = db.query(func.count(Candidate.id)).filter(Candidate.experience_years >= 12.0).scalar() or 0
+    avg_exp = stats_query[1] or 0.0
+    entry = stats_query[2] or 0
+    mid = stats_query[3] or 0
+    senior = stats_query[4] or 0
+    principal = stats_query[5] or 0
+    open_to_work_count = stats_query[6] or 0
+    avg_completeness = stats_query[7] or 0.0
 
-    # Work Preference
+    open_to_work_pct = (open_to_work_count / total) * 100
+
+    # Work Preference group by (fast, since it only aggregates distinct preferences)
     pref_counts = db.query(Candidate.work_preference, func.count(Candidate.id)).group_by(Candidate.work_preference).all()
     work_pref_dist = {pref or "Unknown": count for pref, count in pref_counts}
 
-    # Open to work
-    open_to_work_count = db.query(func.count(Candidate.id)).filter(func.json_extract(Candidate.redrob_signals, '$.open_to_work_flag') == 1).scalar() or 0
-    open_to_work_pct = (open_to_work_count / total) * 100
-
-    # Avg Profile Completeness
-    avg_completeness = db.query(func.avg(func.json_extract(Candidate.redrob_signals, '$.profile_completeness_score'))).scalar() or 0.0
-
-    # Top Skills (computed from all candidates in DB, limited to first 10000 to keep fast, or full if small)
-    # Since we can query skills column
-    skills_query = db.query(Candidate.skills).all()
+    # Top Skills (limit to first 10000 to keep it extremely fast)
+    skills_query = db.query(Candidate.skills).limit(10000).all()
     all_skills = []
     for (skills_list,) in skills_query:
         if skills_list:

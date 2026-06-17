@@ -267,8 +267,8 @@ let selectedForComparison = new Set();
 
 async function initCandidateSearch() {
     try {
-        // Populate standard skills filter panel dynamically
-        await setupSkillsFilter();
+        // Populate standard skills filter panel dynamically in background
+        setupSkillsFilter();
         
         // Setup slider & search inputs
         const searchInput = document.querySelector('header input') || document.querySelector('main input');
@@ -297,8 +297,8 @@ async function initCandidateSearch() {
             });
         }
 
-        // Connect work preference check boxes
-        document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+        // Connect work preference check boxes inside filter sidebar only
+        document.querySelectorAll('aside input[type="checkbox"]').forEach(box => {
             box.addEventListener('change', () => {
                 currentPage = 1;
                 fetchAndRenderCandidates();
@@ -367,7 +367,7 @@ async function fetchAndRenderCandidates() {
     });
 
     const preferences = [];
-    document.querySelectorAll('input[type="checkbox"]:checked').forEach(box => {
+    document.querySelectorAll('aside input[type="checkbox"]:checked').forEach(box => {
         const labelText = box.nextElementSibling?.textContent.toLowerCase() || '';
         if (labelText.includes('remote')) preferences.push('remote');
         if (labelText.includes('hybrid')) preferences.push('hybrid');
@@ -378,9 +378,9 @@ async function fetchAndRenderCandidates() {
     if (query) params.append('q', query);
     if (minExp > 0) params.append('min_experience', minExp);
     if (activeSkills.length > 0) params.append('skill', activeSkills.join(','));
-    if (preferences.length === 1) {
-        const capitalizedPref = preferences[0].charAt(0).toUpperCase() + preferences[0].slice(1);
-        params.append('work_preference', capitalizedPref);
+    if (preferences.length > 0) {
+        const capitalizedPrefs = preferences.map(p => p.charAt(0).toUpperCase() + p.slice(1));
+        params.append('work_preference', capitalizedPrefs.join(','));
     }
 
     const offset = (currentPage - 1) * pageSize;
