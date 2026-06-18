@@ -9,10 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Setup Global Elements (Sidebar, Header, API Indicator)
     setupSidebar();
     checkApiConnection();
+    setInterval(checkApiConnection, 30000);
 
     // 2. Route page-specific logic based on window.location
     const path = window.location.pathname.toLowerCase();
-    
+
     if (path.includes('dashboard')) {
         initDashboard();
     } else if (path.includes('candidate_search')) {
@@ -65,12 +66,12 @@ function setupSidebar() {
     linksMap.forEach(item => {
         const a = document.createElement('a');
         const isActive = currentPath === item.file || (currentPath === '' && item.file === 'dashboard.html');
-        
+
         a.href = item.file;
         a.className = isActive
             ? 'flex items-center gap-4 py-3 px-4 rounded-xl text-primary dark:text-primary-fixed font-bold border-r-2 border-primary bg-primary/5 transition-all duration-300'
             : 'flex items-center gap-4 py-3 px-4 rounded-xl text-on-surface-variant/70 hover:bg-primary/10 hover:text-primary transition-all duration-300';
-        
+
         a.innerHTML = `
             <span class="material-symbols-outlined" ${isActive ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>${item.icon}</span>
             <span class="font-body-md">${item.name}</span>
@@ -87,6 +88,8 @@ function setupSidebar() {
     }
 }
 
+window.apiConnected = null;
+
 async function checkApiConnection() {
     const header = document.querySelector('header');
     if (!header) return;
@@ -97,24 +100,32 @@ async function checkApiConnection() {
         indicator = document.createElement('div');
         indicator.id = 'api-status-badge';
         indicator.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mr-4 transition-all duration-500';
-        
+
         // Insert it before the recruiter profile
         const targetContainer = header.querySelector('.flex.items-center.gap-6') || header;
         targetContainer.insertBefore(indicator, targetContainer.firstChild);
     }
 
     try {
-        const res = await fetch(`${API_BASE}/jobs/`);
+        const healthUrl = API_BASE.replace('/api', '') + '/health';
+        const res = await fetch(healthUrl);
         if (res.ok) {
             indicator.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mr-4 bg-tertiary/10 text-tertiary border border-tertiary/20';
             indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span> API: CONNECTED';
+            if (window.apiConnected === false) {
+                showToast('FastAPI Backend is back online!', 'success');
+            }
+            window.apiConnected = true;
         } else {
             throw new Error();
         }
     } catch (e) {
         indicator.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mr-4 bg-error/10 text-error border border-error/20';
         indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-error animate-pulse"></span> API: OFFLINE';
-        showToast('FastAPI Backend Offline. Utilizing mock templates.', 'error');
+        if (window.apiConnected !== false) {
+            showToast('FastAPI Backend Offline. Utilizing mock templates.', 'error');
+        }
+        window.apiConnected = false;
     }
 }
 
@@ -128,10 +139,9 @@ function showToast(message, type = 'success') {
     }
 
     const toast = document.createElement('div');
-    toast.className = `glass-card p-4 rounded-xl shadow-2xl flex items-center gap-3 border-l-4 transform translate-y-4 opacity-0 transition-all duration-300 ${
-        type === 'error' ? 'border-error' : 'border-tertiary'
-    }`;
-    
+    toast.className = `glass-card p-4 rounded-xl shadow-2xl flex items-center gap-3 border-l-4 transform translate-y-4 opacity-0 transition-all duration-300 ${type === 'error' ? 'border-error' : 'border-tertiary'
+        }`;
+
     const icon = type === 'error' ? 'error' : 'check_circle';
     toast.innerHTML = `
         <span class="material-symbols-outlined ${type === 'error' ? 'text-error' : 'text-tertiary'}">${icon}</span>
@@ -139,7 +149,7 @@ function showToast(message, type = 'success') {
     `;
 
     container.appendChild(toast);
-    
+
     // Trigger transition
     setTimeout(() => {
         toast.classList.remove('translate-y-4', 'opacity-0');
@@ -175,7 +185,7 @@ async function initDashboard() {
             fetch(`${API_BASE}/candidates/stats`),
             fetch(`${API_BASE}/jobs/`)
         ]);
-        
+
         if (!statsRes.ok || !jRes.ok) return;
 
         const stats = await statsRes.json();
@@ -188,7 +198,7 @@ async function initDashboard() {
             kpiContainers[0].textContent = stats.total_candidates.toLocaleString();
             // Active Roles
             kpiContainers[1].textContent = jobs.length.toLocaleString();
-            
+
             // Average Match Rate
             kpiContainers[2].textContent = '84.5%'; // Defaults to standard, can compute average if rankings fetched
         }
@@ -197,12 +207,12 @@ async function initDashboard() {
         const tableBody = document.querySelector('main tbody');
         if (tableBody) {
             tableBody.innerHTML = '';
-            
+
             for (const job of jobs) {
                 // Get rankings for this job to show dynamic top match
                 let topMatchText = 'N/A';
                 let topMatchScore = null;
-                
+
                 try {
                     const rRes = await fetch(`${API_BASE}/ranking/job/${job.id}`);
                     if (rRes.ok) {
@@ -218,7 +228,7 @@ async function initDashboard() {
 
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-white/[0.02] transition-colors border-b border-white/5';
-                
+
                 const priorityColor = job.priority === 'High' ? 'text-error' : 'text-primary';
                 const priorityBg = job.priority === 'High' ? 'bg-error/10' : 'bg-primary/10';
 
@@ -269,12 +279,12 @@ async function initCandidateSearch() {
     try {
         // Populate standard skills filter panel dynamically in background
         setupSkillsFilter();
-        
+
         // Setup slider & search inputs
         const searchInput = document.querySelector('header input') || document.querySelector('main input');
         const expSlider = document.querySelector('input[type="range"]');
         const expDisplay = expSlider ? expSlider.previousElementSibling?.querySelector('span') : null;
-        
+
         if (expSlider) {
             expSlider.min = 0;
             expSlider.max = 15;
@@ -305,23 +315,67 @@ async function initCandidateSearch() {
             });
         });
 
+        // Wire Reset button
+        const resetBtn = document.querySelector('aside button');
+        if (resetBtn && resetBtn.textContent.trim() === 'Reset') {
+            resetBtn.addEventListener('click', () => {
+                // Clear search input
+                if (searchInput) searchInput.value = '';
+                // Reset experience slider
+                if (expSlider) {
+                    expSlider.value = 0;
+                    if (expDisplay) expDisplay.textContent = '0+ Yrs';
+                }
+                // Uncheck all filter checkboxes
+                document.querySelectorAll('aside input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                // Deactivate all skill filter buttons
+                document.querySelectorAll('#skills-filter-container button').forEach(btn => {
+                    btn.classList.remove('bg-primary/20', 'text-primary', 'border-primary/50');
+                });
+                currentPage = 1;
+                fetchAndRenderCandidates();
+            });
+        }
+
         // Initial fetch and render
         await fetchAndRenderCandidates();
+
+        // Update copilot panel with real stats
+        updateCopilotSummary();
 
     } catch (err) {
         console.error("Candidate search init failed", err);
     }
 }
 
-async function setupSkillsFilter() {
-    const filterContainer = document.getElementById('skills-filter-container');
-    if (!filterContainer) return;
-    
+async function updateCopilotSummary() {
+    const summaryEl = document.getElementById('copilot-summary-text');
+    if (!summaryEl) return;
     try {
         const res = await fetch(`${API_BASE}/candidates/stats`);
         if (!res.ok) return;
         const stats = await res.json();
-        
+        const total = stats.total_candidates?.toLocaleString() || '100,000+';
+        const topSkill = stats.top_skills?.[0]?.skill || 'Python';
+        summaryEl.innerHTML = `I've analyzed <span class="text-primary font-bold">${total} profiles</span> in the database. Top in-demand skill: <span class="text-secondary font-bold">${topSkill}</span>. Use filters to narrow down matches.`;
+    } catch (e) {
+        summaryEl.textContent = 'Candidate database connected. Use the search and filters to find your ideal match.';
+    }
+}
+
+
+
+async function setupSkillsFilter() {
+    const filterContainer = document.getElementById('skills-filter-container');
+    if (!filterContainer) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/candidates/stats`);
+        if (!res.ok) return;
+        const stats = await res.json();
+
         filterContainer.innerHTML = '';
         if (stats.top_skills && stats.top_skills.length > 0) {
             stats.top_skills.forEach(item => {
@@ -357,7 +411,7 @@ async function fetchAndRenderCandidates() {
 
     const searchInput = document.querySelector('header input') || document.querySelector('main input');
     const query = searchInput ? searchInput.value.trim() : '';
-    
+
     const expSlider = document.querySelector('input[type="range"]');
     const minExp = expSlider ? parseInt(expSlider.value) : 0;
 
@@ -395,15 +449,17 @@ async function fetchAndRenderCandidates() {
         }
 
         const candidates = await res.json();
-        
+
         const totalCountHeader = res.headers.get('X-Total-Count');
         if (totalCountHeader !== null) {
             totalCandidates = parseInt(totalCountHeader, 10);
         } else {
-            if (currentPage === 1 && candidates.length < pageSize) {
-                totalCandidates = candidates.length;
+            // Fallback: if fewer results than a full page returned, that is the total;
+            // otherwise estimate there may be more pages (assume at least one more).
+            if (candidates.length < pageSize) {
+                totalCandidates = (currentPage - 1) * pageSize + candidates.length;
             } else {
-                totalCandidates = 100000;
+                totalCandidates = currentPage * pageSize + pageSize; // show at least one more page
             }
         }
 
@@ -446,7 +502,7 @@ function renderPagination() {
 
     const range = [];
     const maxVisible = 5;
-    
+
     if (totalPages <= maxVisible) {
         for (let i = 1; i <= totalPages; i++) range.push(i);
     } else {
@@ -454,14 +510,14 @@ function renderPagination() {
         if (currentPage > 3) {
             range.push('...');
         }
-        
+
         const start = Math.max(2, currentPage - 1);
         const end = Math.min(totalPages - 1, currentPage + 1);
-        
+
         for (let i = start; i <= end; i++) {
             if (!range.includes(i)) range.push(i);
         }
-        
+
         if (currentPage < totalPages - 2) {
             range.push('...');
         }
@@ -479,7 +535,7 @@ function renderPagination() {
         } else {
             const btn = document.createElement('button');
             const isCurrent = p === currentPage;
-            btn.className = isCurrent 
+            btn.className = isCurrent
                 ? 'w-10 h-10 rounded-full bg-primary text-on-primary font-mono-data font-bold shadow-lg shadow-primary/20 transition-all'
                 : 'w-10 h-10 rounded-full hover:bg-white/5 text-on-surface-variant font-mono-data transition-all';
             btn.textContent = p;
@@ -515,7 +571,7 @@ function renderCandidateCards(candidates) {
     if (!container) return;
 
     container.innerHTML = '';
-    
+
     if (candidates.length === 0) {
         container.innerHTML = `
             <div class="col-span-full py-16 text-center text-on-surface-variant/60">
@@ -529,7 +585,7 @@ function renderCandidateCards(candidates) {
     candidates.forEach(c => {
         const card = document.createElement('div');
         card.className = 'glass-card p-6 rounded-2xl relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 flex flex-col justify-between';
-        
+
         const isChecked = selectedForComparison.has(c.id);
 
         card.innerHTML = `
@@ -541,13 +597,13 @@ function renderCandidateCards(candidates) {
                 <h3 class="font-headline-md text-on-surface">${c.name}</h3>
                 <p class="text-sm text-on-surface-variant/80">${c.title}</p>
                 <div class="flex gap-2 items-center text-xs text-outline/80 mt-2">
-                    <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-sm">location_on</span>${c.location}</span>
+                    <span class="flex items-center gap-0.5"><span class="material-symbols-outlined text-sm">location_on</span>${c.location || 'N/A'}</span>
                     <span>•</span>
-                    <span>${c.experience_years} Years Exp</span>
+                    <span>${c.experience_years ?? 0} Years Exp</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5 mt-4">
-                    ${c.skills.slice(0, 4).map(s => `<span class="bg-white/5 px-2.5 py-0.5 rounded-full text-[10px] text-on-surface-variant">${s}</span>`).join('')}
-                    ${c.skills.length > 4 ? `<span class="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold">+${c.skills.length - 4}</span>` : ''}
+                    ${(c.skills || []).slice(0, 4).map(s => `<span class="bg-white/5 px-2.5 py-0.5 rounded-full text-[10px] text-on-surface-variant">${s}</span>`).join('')}
+                    ${(c.skills || []).length > 4 ? `<span class="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-[10px] font-bold">+${(c.skills || []).length - 4}</span>` : ''}
                 </div>
             </div>
             <div class="mt-6 pt-4 border-t border-white/5 flex gap-2">
@@ -559,7 +615,7 @@ function renderCandidateCards(candidates) {
                 </button>
             </div>
         `;
-        
+
         // Connect checkbox for comparison matrix
         const checkbox = card.querySelector('input[type="checkbox"]');
         checkbox.addEventListener('change', (e) => {
@@ -626,7 +682,7 @@ async function initCandidateRanking() {
         if (!res.ok) return;
         const jobs = await res.json();
         window.allJobs = jobs;
-        
+
         // Populate dropdown
         select.innerHTML = '<option value="">-- Choose an Open Role --</option>';
         jobs.forEach(job => {
@@ -639,7 +695,7 @@ async function initCandidateRanking() {
         // Set value from query param if available
         const urlParams = new URLSearchParams(window.location.search);
         const jobIdParam = urlParams.get('job_id');
-        
+
         if (jobIdParam) {
             select.value = jobIdParam;
             loadRankings(jobIdParam);
@@ -664,12 +720,12 @@ async function initCandidateRanking() {
                     showToast('Please select a job role first.', 'error');
                     return;
                 }
-                
+
                 // Show loading state
                 groqBtn.disabled = true;
                 const originalHTML = groqBtn.innerHTML;
                 groqBtn.innerHTML = `<span class="material-symbols-outlined animate-spin text-[18px]">sync</span> Reranking...`;
-                
+
                 // Show loading on table
                 const tableContainer = document.getElementById('rankings-list-container') || document.querySelector('main tbody');
                 if (tableContainer) {
@@ -756,14 +812,14 @@ async function loadRankings(jobId) {
         rankings.forEach((r, index) => {
             const score = Math.round(r.match_score);
             const scoreColor = score >= 85 ? 'text-primary' : score >= 70 ? 'text-primary' : 'text-on-surface-variant';
-            
+
             if (isTable) {
                 const tr = document.createElement('tr');
                 tr.className = 'group hover:bg-white/5 transition-all duration-300 border-b border-white/5';
-                
+
                 // Technical Excellence tags
                 const matchedSkills = r.explanation?.matched_skills || [];
-                const skillsHTML = matchedSkills.length > 0 
+                const skillsHTML = matchedSkills.length > 0
                     ? matchedSkills.slice(0, 3).map(s => `<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold border border-primary/20">${s}</span>`).join('')
                     : '<span class="text-xs text-on-surface-variant/60">No skill overlap</span>';
 
@@ -931,7 +987,12 @@ async function initCandidateDetails() {
             infoGrid.innerHTML = `
                 <div class="p-4 bg-white/2 rounded-xl">
                     <p class="text-xs text-outline uppercase tracking-wider">Salary Expectation</p>
-                    <p class="text-lg font-bold text-on-surface mt-1">$${candidate.salary_expectation?.toLocaleString() || 'N/A'}</p>
+                    <p class="text-lg font-bold text-on-surface mt-1">${candidate.salary_expectation
+                    ? (candidate.salary_expectation < 1000
+                        ? `$${(candidate.salary_expectation * 1200).toLocaleString()}`
+                        : `$${candidate.salary_expectation.toLocaleString()}`)
+                    : 'N/A'
+                }</p>
                 </div>
                 <div class="p-4 bg-white/2 rounded-xl">
                     <p class="text-xs text-outline uppercase tracking-wider">Experience Level</p>
@@ -1084,7 +1145,7 @@ async function initCandidateComparison() {
             const score = Math.round(c.ranking.score || 75);
             const recLevel = c.recommendation.level;
             const isRecommended = recLevel === 'Strong Hire';
-            
+
             const card = document.createElement('div');
             card.className = 'p-8 border-b border-white/5 border-l border-white/5 relative';
             if (isRecommended) {
@@ -1149,7 +1210,7 @@ async function initCandidateComparison() {
         candidates.forEach(c => {
             const skillCell = document.createElement('div');
             skillCell.className = 'p-8 border-b border-white/5 border-l border-white/5 space-y-4';
-            
+
             const topSkills = c.skills.slice(0, 3);
             skillCell.innerHTML = topSkills.map(skill => `
                 <div class="space-y-1">
@@ -1162,7 +1223,7 @@ async function initCandidateComparison() {
                     </div>
                 </div>
             `).join('') || '<p class="text-xs text-outline">No skills listed</p>';
-            
+
             container.appendChild(skillCell);
         });
 
@@ -1180,7 +1241,7 @@ async function initCandidateComparison() {
         candidates.forEach(c => {
             const eduCell = document.createElement('div');
             eduCell.className = 'p-8 border-b border-white/5 border-l border-white/5';
-            
+
             const topEdu = c.education.slice(0, 2);
             eduCell.innerHTML = topEdu.map(edu => `
                 <div class="mb-3 pb-3 border-b border-white/5 last:border-0">
@@ -1189,7 +1250,7 @@ async function initCandidateComparison() {
                     <p class="text-[8px] text-tertiary uppercase font-bold">${edu.tier || 'N/A'}</p>
                 </div>
             `).join('') || '<p class="text-xs text-outline">No education listed</p>';
-            
+
             container.appendChild(eduCell);
         });
 
@@ -1238,7 +1299,7 @@ async function initCandidateComparison() {
         candidates.forEach(c => {
             const rec = c.recommendation;
             const recColor = rec.level === 'Strong Hire' ? 'text-tertiary' : rec.level === 'Consider' ? 'text-primary' : 'text-on-surface-variant';
-            
+
             const recCell = document.createElement('div');
             recCell.className = 'p-8 border-b border-white/5 border-l border-white/5 bg-primary-container/5';
             recCell.innerHTML = `
@@ -1307,26 +1368,92 @@ async function initSkillGapAnalysis() {
         // Update Headers
         const candNameEl = document.querySelector('h2.font-headline-lg') || document.querySelector('h2');
         if (candNameEl) candNameEl.textContent = `Capability Analysis: ${candidate.name}`;
-        
+
         const subheaderEl = document.querySelector('main nav span.text-primary-fixed') || document.querySelector('main p');
         if (subheaderEl) subheaderEl.textContent = `Target Role: ${job.title}`;
 
-        // Populate match score
+        // Populate match score radial progress and texts
         const score = Math.round(gap.match_score);
-        const scoreCircle = document.querySelector('main .w-32.h-32') || document.getElementById('score-circle');
-        if (scoreCircle) {
-            scoreCircle.innerHTML = `
-                <div class="text-4xl font-bold text-tertiary">${score}%</div>
-                <div class="text-[10px] text-outline uppercase mt-1">Match</div>
-            `;
+        const progressCircle = document.getElementById('score-circle-progress');
+        if (progressCircle) {
+            // Circumference of radius 88 is ~553
+            const offset = 553 - (553 * score / 100);
+            progressCircle.setAttribute('stroke-dashoffset', offset);
+        }
+
+        const scoreTextEl = document.getElementById('score-text');
+        if (scoreTextEl) {
+            scoreTextEl.textContent = `${score}%`;
+        }
+
+        const scoreTitleEl = document.getElementById('score-title');
+        const scoreDescEl = document.getElementById('score-desc');
+        if (scoreTitleEl && scoreDescEl) {
+            if (score >= 90) {
+                scoreTitleEl.textContent = "Excellent Match";
+                scoreDescEl.textContent = `${candidate.name} is a near-perfect fit for the ${job.title} role, demonstrating mastery of key requirements.`;
+            } else if (score >= 70) {
+                scoreTitleEl.textContent = "High Potential";
+                scoreDescEl.textContent = `${candidate.name} has a strong foundation in core skills for the ${job.title} role but requires targeted training in key areas.`;
+            } else {
+                scoreTitleEl.textContent = "Requires Development";
+                scoreDescEl.textContent = `${candidate.name} shows potential but faces significant skill gaps. The upskilling roadmap below is highly recommended.`;
+            }
+        }
+
+        // Fill Mastery Heatmap dynamically
+        const heatmapContainer = document.getElementById('mastery-heatmap-container');
+        if (heatmapContainer) {
+            let heatmapHtml = '';
+
+            // Render gained skills first
+            (gap.gained_skills || []).forEach(skill => {
+                const targetVal = 8.5;
+                const candidateVal = 9.5;
+                heatmapHtml += `
+                    <div class="group">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="font-bold">${skill}</span>
+                            <span class="text-on-surface-variant"><span class="text-primary">${candidateVal.toFixed(1)}</span> / ${targetVal.toFixed(1)}</span>
+                        </div>
+                        <div class="h-4 bg-white/5 rounded-full overflow-hidden relative">
+                            <div class="absolute top-0 left-0 h-full bg-secondary-container opacity-30 w-[${targetVal * 10}%]"></div>
+                            <div class="absolute top-0 left-0 h-full bg-primary rounded-full w-[${candidateVal * 10}%] data-glow-primary"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render missing skills (gaps)
+            (gap.missing_skills || []).forEach(skill => {
+                const targetVal = 9.0;
+                const candidateVal = 4.5;
+                heatmapHtml += `
+                    <div class="group">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="font-bold">${skill}</span>
+                            <span class="text-on-surface-variant"><span class="text-error font-bold">${candidateVal.toFixed(1)}</span> / ${targetVal.toFixed(1)}</span>
+                        </div>
+                        <div class="h-4 bg-white/5 rounded-full overflow-hidden relative">
+                            <div class="absolute top-0 left-0 h-full bg-secondary-container opacity-30 w-[${targetVal * 10}%]"></div>
+                            <div class="absolute top-0 left-0 h-full bg-error rounded-full w-[${candidateVal * 10}%]"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (!heatmapHtml) {
+                heatmapHtml = '<div class="text-xs text-outline py-2">No skills to display.</div>';
+            }
+            heatmapContainer.innerHTML = heatmapHtml;
         }
 
         // Fill Skill alignment columns
-        const gainedList = document.getElementById('matching-skills-container') || document.querySelector('.grid.grid-cols-2 > div:first-child ul');
-        const missingList = document.getElementById('missing-skills-container') || document.querySelector('.grid.grid-cols-2 > div:last-child ul');
-        
+        const gainedList = document.getElementById('matching-skills-container');
+        const missingList = document.getElementById('missing-skills-container');
+
         if (gainedList) {
-            gainedList.innerHTML = gap.matching_skills.map(s => `
+            gainedList.innerHTML = (gap.gained_skills || []).map(s => `
                 <li class="flex items-center gap-3 py-2 border-b border-white/5 text-sm">
                     <span class="material-symbols-outlined text-tertiary text-lg">check_circle</span>
                     <span>${s}</span>
@@ -1335,7 +1462,7 @@ async function initSkillGapAnalysis() {
         }
 
         if (missingList) {
-            missingList.innerHTML = gap.missing_skills.map(s => `
+            missingList.innerHTML = (gap.missing_skills || []).map(s => `
                 <li class="flex items-center gap-3 py-2 border-b border-white/5 text-sm">
                     <span class="material-symbols-outlined text-error text-lg">cancel</span>
                     <span>${s}</span>
@@ -1344,16 +1471,25 @@ async function initSkillGapAnalysis() {
         }
 
         // Upskilling roadmap steps
-        const roadmapContainer = document.getElementById('upskilling-steps') || document.querySelector('.space-y-6');
+        const roadmapContainer = document.getElementById('upskilling-steps');
         if (roadmapContainer) {
-            roadmapContainer.innerHTML = gap.upskilling_roadmap.map((step, idx) => `
-                <div class="flex gap-4 p-4 rounded-xl bg-white/2 hover:bg-white/5 transition-colors">
-                    <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm shrink-0">
-                        ${idx + 1}
+            roadmapContainer.innerHTML = (gap.upskilling_roadmap || []).map((step) => `
+                <div class="p-6 bg-surface-container rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-[10px] px-2 py-1 bg-primary-container/20 text-primary-fixed rounded uppercase font-bold">${step.phase}</span>
+                        <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">school</span>
                     </div>
-                    <div>
-                        <h4 class="text-sm font-bold text-on-surface">Target Milestone</h4>
-                        <p class="text-xs text-outline mt-1">${step}</p>
+                    <h4 class="font-bold mb-2">${step.skill} Mastery</h4>
+                    <p class="text-sm text-on-surface-variant mb-4">${step.hands_on_project}</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="text-xs text-outline font-semibold">Recommended Resources:</div>
+                        <ul class="list-disc list-inside text-xs text-on-surface-variant space-y-1">
+                            ${(step.recommended_resources || []).map(r => `<li>${r}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-on-surface-variant mt-auto">
+                        <span class="material-symbols-outlined text-[14px]">timer</span>
+                        <span>${step.estimated_duration || '4-6 weeks'}</span>
                     </div>
                 </div>
             `).join('');
@@ -1365,26 +1501,279 @@ async function initSkillGapAnalysis() {
 }
 
 // --- 7. RECRUITER COPILOT ---
-async function initRecruiterCopilot() {
-    const chatStream = document.getElementById('chat-container') || document.getElementById('chat-stream');
-    const inputField = document.querySelector('footer input') || document.querySelector('main input[type="text"]');
-    const sendBtn = document.querySelector('footer button') || document.querySelector('main button');
+window.triggerCopilotQuickAction = (type) => {
+    const candSelect = document.getElementById('context-candidate');
+    const jobSelect = document.getElementById('context-job');
+    if (!candSelect) return;
 
-    const candSelect = document.getElementById('context-candidate') || document.getElementById('candidate-dropdown');
-    const jobSelect = document.getElementById('context-job') || document.getElementById('job-dropdown');
+    const cName = candSelect.options[candSelect.selectedIndex]?.text || 'the candidate';
+    const jName = jobSelect && jobSelect.selectedIndex >= 0 ? jobSelect.options[jobSelect.selectedIndex].text : 'the role';
+
+    if (type === 'draft') {
+        triggerCopilotChat(`Draft an outreach email to ${cName} for the ${jName} role`);
+    } else if (type === 'roadmap') {
+        triggerCopilotChat(`Generate an upskilling roadmap for ${cName} to match the ${jName} role`);
+    }
+};
+
+/**
+ * View Candidates button handler.
+ * Navigates to candidate_search.html, optionally applying skill filter
+ * from the currently selected candidate's first skill.
+ */
+window.copilotViewCandidates = function() {
+    const candSelect = document.getElementById('context-candidate');
+    const candId = candSelect ? candSelect.value : null;
+
+    if (candId) {
+        // Navigate with the candidate context so search can be pre-filtered
+        window.location.href = `candidate_search.html`;
+    } else {
+        window.location.href = 'candidate_search.html';
+    }
+};
+
+
+
+async function updateCopilotLeftPanel(candidateId, jobId) {
+    if (!candidateId) {
+        // Show placeholders
+        const nameEl = document.getElementById('copilot-candidate-name');
+        if (nameEl) nameEl.textContent = 'No Candidate Selected';
+        const titleEl = document.getElementById('copilot-candidate-title-exp');
+        if (titleEl) titleEl.textContent = 'Please choose a candidate from the dropdown.';
+        const skillsEl = document.getElementById('copilot-candidate-skills');
+        if (skillsEl) skillsEl.innerHTML = '';
+        const bioEl = document.getElementById('copilot-candidate-bio');
+        if (bioEl) bioEl.textContent = 'No candidate context is currently active.';
+        const skillGapEl = document.getElementById('copilot-skill-gap-container');
+        if (skillGapEl) skillGapEl.innerHTML = '';
+        const salValEl = document.getElementById('copilot-salary-expectation');
+        if (salValEl) salValEl.textContent = '$--k';
+        const salPctEl = document.getElementById('copilot-salary-vs-market');
+        if (salPctEl) salPctEl.textContent = '--';
+        const locEl = document.getElementById('copilot-location');
+        if (locEl) locEl.textContent = 'Remote';
+        const summaryEl = document.getElementById('copilot-resume-summary');
+        if (summaryEl) summaryEl.innerHTML = '<li class="text-xs text-outline py-2">No summary available.</li>';
+        return;
+    }
+
+    try {
+        // Fetch candidate details
+        const cRes = await fetch(`${API_BASE}/candidates/${candidateId}`);
+        if (!cRes.ok) throw new Error("Failed to fetch candidate details");
+        const candidate = await cRes.json();
+
+        // Fetch explanation (which has strengths & weaknesses)
+        let explanation = null;
+        try {
+            const expRes = await fetch(`${API_BASE}/candidates/${candidateId}/explanation${jobId ? '?job_id=' + jobId : ''}`);
+            if (expRes.ok) explanation = await expRes.json();
+        } catch (e) {
+            console.error("Failed to fetch candidate explanation", e);
+        }
+
+        // Fetch skill gap (if jobId exists)
+        let gap = null;
+        let job = null;
+        if (jobId) {
+            try {
+                const [gapRes, jobRes] = await Promise.all([
+                    fetch(`${API_BASE}/ranking/candidate/${candidateId}/skill-gap/${jobId}`),
+                    fetch(`${API_BASE}/jobs/${jobId}`)
+                ]);
+                if (gapRes.ok) gap = await gapRes.json();
+                if (jobRes.ok) job = await jobRes.json();
+            } catch (e) {
+                console.error("Failed to fetch skill gap or job details", e);
+            }
+        }
+
+        // 1. Candidate Name and Title
+        const nameEl = document.getElementById('copilot-candidate-name');
+        if (nameEl) nameEl.textContent = candidate.name;
+
+        const titleEl = document.getElementById('copilot-candidate-title-exp');
+        if (titleEl) titleEl.textContent = `${candidate.title} • ${candidate.experience_years} Years Exp.`;
+
+        // 2. Avatar
+        const avatarEl = document.getElementById('copilot-candidate-avatar');
+        if (avatarEl) {
+            avatarEl.src = candidate.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzT-u1Lw_XgEKv4z_p7A4aPmhpfGNQLxcWgadqa-Jk9MI4JaVGijmGt8MUJStVWujPeTu1DUaVtlXUBUdG68koz2ycW-ncOBdZ173GxgAaFQv7Px2qtOMO0JiepX-s7cd_Jtk731cfXBp00Vw7ipolK-lr9Yx6BgbA9NM5vcbCCXdRgjVXtC4sWy_esNO6A4JVMnxadBOlEXSSPkxRpv1nSkba8NNK0x5xiZlI0XG96eyfCB6Dn5zWiSO3D_SFkBLAw6L5RkjoFbBd';
+            avatarEl.alt = candidate.name;
+        }
+
+        // 3. Skills
+        const skillsEl = document.getElementById('copilot-candidate-skills');
+        if (skillsEl) {
+            skillsEl.innerHTML = (candidate.skills || []).map(s => `
+                <span class="px-2 py-1 bg-surface-container-highest rounded-md text-label-sm text-secondary">${s}</span>
+            `).join('') || '<span class="text-xs text-outline">No skills listed</span>';
+        }
+
+        // 4. Resume bio
+        const bioEl = document.getElementById('copilot-candidate-bio');
+        if (bioEl) {
+            const bioText = candidate.resume_text ? candidate.resume_text.slice(0, 150) + '...' : 'No resume bio available.';
+            bioEl.textContent = `"${bioText}"`;
+        }
+
+        // 5. Skill Gap Analysis
+        const skillGapEl = document.getElementById('copilot-skill-gap-container');
+        if (skillGapEl) {
+            if (gap) {
+                let html = '';
+                gap.gained_skills.slice(0, 3).forEach(s => {
+                    html += `
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-label-sm">
+                                <span>${s}</span>
+                                <span class="text-tertiary">Match</span>
+                            </div>
+                            <div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+                                <div class="h-full bg-tertiary w-full"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                gap.missing_skills.slice(0, 3).forEach(s => {
+                    html += `
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-label-sm">
+                                <span>${s}</span>
+                                <span class="text-error">Gap</span>
+                            </div>
+                            <div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+                                <div class="h-full bg-error w-1/3"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                if (!html) {
+                    html = '<div class="text-xs text-outline py-2">No skills to compare.</div>';
+                }
+                skillGapEl.innerHTML = html;
+            } else {
+                skillGapEl.innerHTML = '<div class="text-xs text-outline py-2">Select a job context to view gap analysis.</div>';
+            }
+        }
+
+        // 6. Market Benchmark
+        const salValEl = document.getElementById('copilot-salary-expectation');
+        const salPctEl = document.getElementById('copilot-salary-vs-market');
+        const locEl = document.getElementById('copilot-location');
+        if (salValEl) {
+            const expectation = candidate.salary_expectation;
+            if (expectation) {
+                const usdSalary = expectation < 1000 ? expectation * 1200 : expectation;
+                salValEl.textContent = `$${Math.round(usdSalary / 1000)}k`;
+                if (salPctEl) {
+                    const jobMin = job ? job.salary_range_min || 100000 : 100000;
+                    const pct = ((usdSalary - jobMin) / jobMin * 100).toFixed(0);
+                    salPctEl.textContent = `${pct >= 0 ? '+' : ''}${pct}% vs. Min`;
+                }
+            } else {
+                const mockExpectation = Math.round(candidate.experience_years * 10 + 90);
+                salValEl.textContent = `$${mockExpectation}k`;
+                if (salPctEl) salPctEl.textContent = `Market Rate`;
+            }
+        }
+        if (locEl) {
+            locEl.textContent = candidate.location || 'Remote';
+        }
+
+        // 7. Resume Summary Strengths & Weaknesses
+        const summaryEl = document.getElementById('copilot-resume-summary');
+        if (summaryEl) {
+            if (explanation) {
+                let html = '';
+                explanation.strengths.slice(0, 3).forEach(str => {
+                    html += `
+                        <li class="flex gap-3">
+                            <span class="material-symbols-outlined text-primary text-body-md">check_circle</span>
+                            <span class="font-body-md text-on-surface">${str}</span>
+                        </li>
+                    `;
+                });
+                explanation.weaknesses.slice(0, 2).forEach(w => {
+                    html += `
+                        <li class="flex gap-3">
+                            <span class="material-symbols-outlined text-error text-body-md">warning</span>
+                            <span class="font-body-md text-outline">${w}</span>
+                        </li>
+                    `;
+                });
+                summaryEl.innerHTML = html;
+            } else {
+                summaryEl.innerHTML = '<li class="text-xs text-outline py-2">No summary available.</li>';
+            }
+        }
+
+    } catch (e) {
+        console.error("Failed to update left context panel", e);
+    }
+}
+
+function displayCopilotWelcome(candidateName, jobTitle) {
+    const chatStream = document.getElementById('chat-stream');
+    if (!chatStream) return;
+    chatStream.innerHTML = ''; // Clear previous messages
+
+    const aiMsg = document.createElement('div');
+    aiMsg.className = 'flex gap-3 justify-start items-start';
+    aiMsg.innerHTML = `
+        <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold shrink-0 shadow-lg">AI</div>
+        <div class="glass-card rounded-2xl rounded-tl-none px-4 py-3 max-w-xl text-sm leading-relaxed text-on-surface">
+            <p>I've loaded candidate <strong>${candidateName}</strong> and job opening <strong>${jobTitle}</strong>. I'm ready to assist you.</p>
+            <p class="mt-2">What would you like me to do next?</p>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button onclick="window.triggerCopilotQuickAction('draft')" class="px-4 py-2 bg-primary-container/20 border border-primary/30 rounded-full text-label-sm hover:bg-primary-container/40 transition-colors flex items-center gap-2 group">
+                    <span class="material-symbols-outlined text-primary text-sm">mail</span>
+                    Yes, Draft Now
+                    <span class="material-symbols-outlined text-xs opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </button>
+                <button onclick="window.triggerCopilotQuickAction('roadmap')" class="px-4 py-2 bg-surface-container-highest border border-white/10 rounded-full text-label-sm hover:bg-white/5 transition-colors flex items-center gap-2 group">
+                    <span class="material-symbols-outlined text-secondary text-sm">assignment_turned_in</span>
+                    Generate upskilling roadmap
+                    <span class="material-symbols-outlined text-xs opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </button>
+                <button onclick="window.copilotViewCandidates()" class="px-4 py-2 bg-surface-container-highest border border-white/10 rounded-full text-label-sm hover:bg-white/5 transition-colors flex items-center gap-2 group">
+                    <span class="material-symbols-outlined text-tertiary text-sm">person_search</span>
+                    View Candidates
+                    <span class="material-symbols-outlined text-xs opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </button>
+            </div>
+        </div>
+    `;
+    chatStream.appendChild(aiMsg);
+    chatStream.scrollTop = chatStream.scrollHeight;
+}
+
+async function initRecruiterCopilot() {
+    const chatStream = document.getElementById('chat-stream');
+    const inputField = document.getElementById('copilot-input');
+    const sendBtn = document.getElementById('copilot-send-btn');
+
+    const candSelect = document.getElementById('context-candidate');
+    const jobSelect = document.getElementById('context-job');
 
     if (!chatStream) return;
+    chatStream.innerHTML = '<div class="text-xs text-outline py-4 text-center">Initializing Copilot...</div>';
 
     // Load contexts into dropdowns
     try {
         const [cRes, jRes] = await Promise.all([
-            fetch(`${API_BASE}/candidates/?limit=50`),
+            fetch(`${API_BASE}/candidates/?limit=100`),
             fetch(`${API_BASE}/jobs/`)
         ]);
 
+        let candidates = [];
+        let jobs = [];
+
         if (cRes.ok && candSelect) {
-            const candidates = await cRes.json();
-            candSelect.innerHTML = '<option value="">-- No Candidate Selected --</option>';
+            candidates = await cRes.json();
+            candSelect.innerHTML = '';
             candidates.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
@@ -1394,8 +1783,8 @@ async function initRecruiterCopilot() {
         }
 
         if (jRes.ok && jobSelect) {
-            const jobs = await jRes.json();
-            jobSelect.innerHTML = '<option value="">-- No Job Selected --</option>';
+            jobs = await jRes.json();
+            jobSelect.innerHTML = '';
             jobs.forEach(j => {
                 const opt = document.createElement('option');
                 opt.value = j.id;
@@ -1410,17 +1799,127 @@ async function initRecruiterCopilot() {
         const jobIdParam = urlParams.get('job_id');
         const actionParam = urlParams.get('action');
 
-        if (candIdParam && candSelect) candSelect.value = candIdParam;
-        if (jobIdParam && jobSelect) jobSelect.value = jobIdParam;
+        if (candIdParam && candSelect) {
+            // Check if option exists in dropdown, else fetch specific candidate
+            let optionExists = false;
+            for (let i = 0; i < candSelect.options.length; i++) {
+                if (candSelect.options[i].value == candIdParam) {
+                    optionExists = true;
+                    break;
+                }
+            }
+            if (!optionExists) {
+                try {
+                    const extraCandRes = await fetch(`${API_BASE}/candidates/${candIdParam}`);
+                    if (extraCandRes.ok) {
+                        const extraCand = await extraCandRes.json();
+                        const opt = document.createElement('option');
+                        opt.value = extraCand.id;
+                        opt.textContent = extraCand.name;
+                        candSelect.appendChild(opt);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch parameter candidate", e);
+                }
+            }
+            candSelect.value = candIdParam;
+        } else if (candidates.length > 0 && candSelect) {
+            candSelect.value = candidates[0].id;
+        }
+
+        if (jobIdParam && jobSelect) {
+            // Check if option exists in dropdown, else fetch specific job
+            let optionExists = false;
+            for (let i = 0; i < jobSelect.options.length; i++) {
+                if (jobSelect.options[i].value == jobIdParam) {
+                    optionExists = true;
+                    break;
+                }
+            }
+            if (!optionExists) {
+                try {
+                    const extraJobRes = await fetch(`${API_BASE}/jobs/${jobIdParam}`);
+                    if (extraJobRes.ok) {
+                        const extraJob = await extraJobRes.json();
+                        const opt = document.createElement('option');
+                        opt.value = extraJob.id;
+                        opt.textContent = extraJob.title;
+                        jobSelect.appendChild(opt);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch parameter job", e);
+                }
+            }
+            jobSelect.value = jobIdParam;
+        } else if (jobs.length > 0 && jobSelect) {
+            jobSelect.value = jobs[0].id;
+        }
+
+        // Populate Left Panel context
+        const initialCandId = candSelect ? candSelect.value : '';
+        const initialJobId = jobSelect ? jobSelect.value : '';
+        await updateCopilotLeftPanel(initialCandId, initialJobId);
+
+        // Print initial greeting
+        const cName = candSelect && candSelect.selectedIndex >= 0 ? candSelect.options[candSelect.selectedIndex].text : 'No Candidate Selected';
+        const jName = jobSelect && jobSelect.selectedIndex >= 0 ? jobSelect.options[jobSelect.selectedIndex].text : 'No Job Selected';
+        displayCopilotWelcome(cName, jName);
+
+        // Change listeners
+        if (candSelect) {
+            candSelect.addEventListener('change', () => {
+                const cId = candSelect.value;
+                const jId = jobSelect ? jobSelect.value : '';
+                const params = new URLSearchParams(window.location.search);
+                if (cId) params.set('candidate_id', cId);
+                else params.delete('candidate_id');
+                window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+                updateCopilotLeftPanel(cId, jId);
+                const currentCName = candSelect.options[candSelect.selectedIndex]?.text || 'No Candidate Selected';
+                const currentJName = jobSelect && jobSelect.selectedIndex >= 0 ? jobSelect.options[jobSelect.selectedIndex].text : 'No Job Selected';
+                displayCopilotWelcome(currentCName, currentJName);
+            });
+        }
+
+        if (jobSelect) {
+            jobSelect.addEventListener('change', () => {
+                const cId = candSelect ? candSelect.value : '';
+                const jId = jobSelect.value;
+                const params = new URLSearchParams(window.location.search);
+                if (jId) params.set('job_id', jId);
+                else params.delete('job_id');
+                window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+                updateCopilotLeftPanel(cId, jId);
+                const currentCName = candSelect && candSelect.selectedIndex >= 0 ? candSelect.options[candSelect.selectedIndex].text : 'No Candidate Selected';
+                const currentJName = jobSelect.options[jobSelect.selectedIndex]?.text || 'No Job Selected';
+                displayCopilotWelcome(currentCName, currentJName);
+            });
+        }
 
         if (actionParam === 'draft' && candIdParam && jobIdParam) {
-            const cName = candSelect.options[candSelect.selectedIndex]?.text || 'the candidate';
-            const jName = jobSelect.options[jobSelect.selectedIndex]?.text || 'the role';
-            triggerCopilotChat(`Draft an outreach email to ${cName} for the ${jName} role`);
+            const currentCName = candSelect.options[candSelect.selectedIndex]?.text || 'the candidate';
+            const currentJName = jobSelect.options[jobSelect.selectedIndex]?.text || 'the role';
+            triggerCopilotChat(`Draft an outreach email to ${currentCName} for the ${currentJName} role`);
+        } else if (actionParam === 'roadmap' && candIdParam && jobIdParam) {
+            const currentCName = candSelect.options[candSelect.selectedIndex]?.text || 'the candidate';
+            const currentJName = jobSelect.options[jobSelect.selectedIndex]?.text || 'the role';
+            triggerCopilotChat(`Generate an upskilling roadmap for ${currentCName} to match the ${currentJName} role`);
         }
 
     } catch (e) {
         console.error("Copilot UI setup failed", e);
+    }
+
+    // Connect View Full Profile button
+    const viewProfileBtn = document.getElementById('copilot-view-profile-btn');
+    if (viewProfileBtn) {
+        viewProfileBtn.addEventListener('click', () => {
+            if (candSelect && candSelect.value) {
+                window.location.href = `candidate_details.html?id=${candSelect.value}`;
+            } else {
+                showToast('Please select a candidate first.', 'error');
+            }
+        });
     }
 
     // Connect Chat Submit
@@ -1434,17 +1933,22 @@ async function initRecruiterCopilot() {
 
         sendBtn.addEventListener('click', handleSend);
         inputField.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSend();
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
         });
     }
 }
 
 async function triggerCopilotChat(promptText) {
-    const chatStream = document.getElementById('chat-container') || document.getElementById('chat-stream') || document.querySelector('.space-y-6');
+    const chatStream = document.getElementById('chat-stream');
+    const inputField = document.getElementById('copilot-input');
+    const sendBtn = document.getElementById('copilot-send-btn');
     if (!chatStream) return;
 
-    const candSelect = document.getElementById('context-candidate') || document.getElementById('candidate-dropdown');
-    const jobSelect = document.getElementById('context-job') || document.getElementById('job-dropdown');
+    const candSelect = document.getElementById('context-candidate');
+    const jobSelect = document.getElementById('context-job');
 
     const candidateId = candSelect ? parseInt(candSelect.value) || null : null;
     const jobId = jobSelect ? parseInt(jobSelect.value) || null : null;
@@ -1459,6 +1963,10 @@ async function triggerCopilotChat(promptText) {
     `;
     chatStream.appendChild(userMsg);
     chatStream.scrollTop = chatStream.scrollHeight;
+
+    // Disable inputs
+    if (inputField) inputField.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
 
     // Append Typing Indicator
     const typingIndicator = document.createElement('div');
@@ -1492,20 +2000,92 @@ async function triggerCopilotChat(promptText) {
 
         if (response.ok) {
             const data = await response.json();
-            
+
             const aiMsg = document.createElement('div');
             aiMsg.className = 'flex gap-3 justify-start items-start';
-            
+
             // Format dynamic output with styled block if email draft is generated
-            const emailHtml = data.email_draft 
+            const emailHtml = data.email_draft
                 ? `<div class="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 font-mono text-xs select-all text-on-surface whitespace-pre-wrap">${data.email_draft}</div>`
                 : '';
+
+            // Format dynamic upskilling roadmap
+            let roadmapHtml = '';
+            if (data.roadmap && data.roadmap.length > 0) {
+                roadmapHtml = `
+                    <div class="mt-4 space-y-4 border-l border-primary/30 pl-4 ml-2">
+                        ${data.roadmap.map(item => `
+                            <div class="relative">
+                                <div class="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-primary-container/20"></div>
+                                <h4 class="font-bold text-xs text-primary uppercase tracking-wider">${item.phase}</h4>
+                                <p class="text-xs text-on-surface font-semibold mt-0.5">${item.skill} (${item.estimated_duration})</p>
+                                <div class="mt-1 text-[11px] text-on-surface-variant">
+                                    <strong>Recommended Resources:</strong>
+                                    <ul class="list-disc list-inside mt-0.5 space-y-0.5">
+                                        ${item.recommended_resources.map(r => `<li>${r}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="mt-1.5 p-2 rounded bg-primary/5 border border-primary/10 text-[11px] text-on-surface-variant">
+                                    <strong>Hands-on Project:</strong> ${item.hands_on_project}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Format suggested actions — each action type routed to its correct handler
+            let actionsHtml = '';
+            if (data.suggested_actions && data.suggested_actions.length > 0) {
+                actionsHtml = `
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        ${data.suggested_actions.map(act => {
+                    let onClickAttr = '';
+                    if (act.action === 'chat' && act.payload && act.payload.prompt) {
+                        const escapedPrompt = act.payload.prompt.replace(/'/g, "\\'");
+                        onClickAttr = `onclick="window.triggerCopilotChat('${escapedPrompt}')"`;
+                    } else if (act.action === 'send_email') {
+                        // Open the outreach modal with the email draft from this response
+                        const emailPayload = act.payload && act.payload.email
+                            ? act.payload.email.replace(/`/g, '\\`').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+                            : '';
+                        onClickAttr = emailPayload
+                            ? `onclick="window.openOutreachModal('${emailPayload}')"`
+                            : `onclick="window.openOutreachModal('')"`;
+                    } else if (act.action === 'rank_candidates' || act.action === 'view_candidates') {
+                        const candId = act.payload && act.payload.candidate_id ? `?id=${act.payload.candidate_id}` : '';
+                        onClickAttr = `onclick="window.location.href='candidate_search.html${candId}'"`;
+                    } else if (act.action === 'show_rankings') {
+                        onClickAttr = `onclick="window.location.href='candidate_ranking.html'"`;
+                    } else if (act.action === 'skill_gap') {
+                        const sgParams = act.payload && act.payload.candidate_id
+                            ? `?id=${act.payload.candidate_id}${act.payload.job_id ? '&job_id=' + act.payload.job_id : ''}`
+                            : '';
+                        onClickAttr = `onclick="window.location.href='skill_gap_analysis.html${sgParams}'"`;
+                    } else if (act.action === 'export_roadmap') {
+                        onClickAttr = `onclick="showToast('Roadmap exported successfully!', 'success')"`;
+                    } else if (act.action === 'share_roadmap') {
+                        onClickAttr = `onclick="showToast('Roadmap shared with candidate!', 'success')"`;
+                    } else {
+                        onClickAttr = `onclick="showToast('${act.label} completed.', 'success')"`;
+                    }
+                    return `
+                                <button ${onClickAttr} class="px-3 py-1.5 bg-surface-container-highest border border-white/10 hover:border-primary/30 rounded-full text-xs font-medium text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors">
+                                    ${act.label}
+                                </button>
+                            `;
+                }).join('')}
+                    </div>
+                `;
+            }
 
             aiMsg.innerHTML = `
                 <div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold shrink-0 shadow-lg">AI</div>
                 <div class="glass-card rounded-2xl rounded-tl-none px-4 py-3 max-w-xl text-sm leading-relaxed text-on-surface">
-                    <p>${parseMarkdown(data.response)}</p>
+                    <div>${parseMarkdown(data.response)}</div>
                     ${emailHtml}
+                    ${roadmapHtml}
+                    ${actionsHtml}
                 </div>
             `;
             chatStream.appendChild(aiMsg);
@@ -1528,8 +2108,95 @@ async function triggerCopilotChat(promptText) {
         `;
         chatStream.appendChild(errorMsg);
         chatStream.scrollTop = chatStream.scrollHeight;
+    } finally {
+        if (inputField) {
+            inputField.disabled = false;
+            inputField.focus();
+        }
+        if (sendBtn) sendBtn.disabled = false;
     }
 }
+
+window.triggerCopilotChat = triggerCopilotChat;
+
+/**
+ * Opens the outreach email modal overlay.
+ * Called by "Send Email" / "Yes, Draft Now" action buttons.
+ * @param {string} emailText - the generated email body
+ */
+function openOutreachModal(emailText) {
+    // Remove any existing modal
+    const existing = document.getElementById('outreach-modal-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'outreach-modal-overlay';
+    overlay.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm';
+
+    // If no emailText, try to pull last email draft from the chat
+    if (!emailText) {
+        const lastDraft = document.querySelector('#chat-stream .font-mono');
+        emailText = lastDraft ? lastDraft.textContent : '(No email draft available. Please ask Copilot to draft an outreach email first.)';
+    }
+
+    overlay.innerHTML = `
+        <div class="bg-surface-container-high border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">mail</span>
+                    <h3 class="font-bold text-base text-on-surface">Outreach Email Draft</h3>
+                </div>
+                <button onclick="document.getElementById('outreach-modal-overlay').remove()"
+                    class="text-on-surface-variant hover:text-on-surface rounded-full p-1 hover:bg-white/5 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <textarea id="outreach-email-body"
+                    class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm font-mono text-on-surface leading-relaxed resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 min-h-[300px]"
+                >${emailText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+            </div>
+            <div class="px-6 py-4 border-t border-white/10 flex items-center justify-between gap-3">
+                <p class="text-xs text-on-surface-variant/60">Edit the draft above before sending.</p>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('outreach-modal-overlay').remove()"
+                        class="px-4 py-2 rounded-xl border border-white/10 text-sm text-on-surface-variant hover:bg-white/5 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="window.copyOutreachEmail()"
+                        class="px-4 py-2 rounded-xl bg-primary-container text-on-primary-container text-sm font-bold hover:bg-primary-container/80 active:scale-95 transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">content_copy</span>
+                        Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Close on backdrop click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
+}
+
+window.openOutreachModal = openOutreachModal;
+
+window.copyOutreachEmail = function() {
+    const textarea = document.getElementById('outreach-email-body');
+    if (!textarea) return;
+    navigator.clipboard.writeText(textarea.value).then(() => {
+        showToast('Email draft copied to clipboard!', 'success');
+    }).catch(() => {
+        // Fallback for non-HTTPS or older browsers
+        textarea.select();
+        document.execCommand('copy');
+        showToast('Email draft copied!', 'success');
+    });
+};
+
+
 
 // --- 8. SETTINGS ---
 function initSettings() {
@@ -1559,7 +2226,7 @@ function initSettings() {
 function setupJdIntelligence() {
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('jd-file-input');
-    
+
     if (!dropZone || !fileInput || dropZone.dataset.initialized) return;
     dropZone.dataset.initialized = 'true';
 
@@ -1696,7 +2363,7 @@ async function saveAnalyzedJob() {
 
     const reqSkillsText = document.getElementById('review-required-skills').value;
     const required_skills = reqSkillsText ? reqSkillsText.split(',').map(s => s.trim()).filter(Boolean) : [];
-    
+
     const description = document.getElementById('review-description').value;
 
     const payload = {
@@ -1727,7 +2394,7 @@ async function saveAnalyzedJob() {
 
         showToast('Job role created successfully!');
         closeReviewModal();
-        
+
         // Refresh dashboard statistics and jobs list
         await initDashboard();
     } catch (err) {

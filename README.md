@@ -142,19 +142,19 @@ TalentMindAI/
    ```
 
 4. Seed the SQLite database with mockup candidates and roles:
-   ```bash
+   ```bash commands
    python -m app.seed
    ```
 
 5. Run the FastAPI development server:
-   ```bash
+   ```bash command
    uvicorn app.main:app --reload
    ```
    The backend API will run at `http://127.0.0.1:8000` (interactive docs available at `/docs`).
 
 ### 2. Generate Submission Output
 To compile, sort, and export the top 100 candidates based on the parsed job description in `extracted_jd.txt`:
-```bash
+```bash command
 cd backend
 # Run heuristic ranking:
 python generate_submission.py

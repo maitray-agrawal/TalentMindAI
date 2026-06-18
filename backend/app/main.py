@@ -20,6 +20,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Total-Count"],  # Required so browser JS can read this custom header
 )
 
 # Include Routers
@@ -37,3 +38,8 @@ def root():
         "docs_url": "/docs",
         "api_prefix": settings.API_V1_STR
     }
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
+

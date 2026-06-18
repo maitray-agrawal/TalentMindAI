@@ -180,14 +180,8 @@ def read_candidates(
     if response is not None:
         total_count = query.count()
         response.headers["X-Total-Count"] = str(total_count)
-        response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
                 
-    # Handle Query defaults when called directly in Python tests
-    from fastapi.params import Query as QueryParam
-    actual_limit = limit.default if isinstance(limit, QueryParam) else limit
-    actual_offset = offset.default if isinstance(offset, QueryParam) else offset
-    
-    return query.offset(actual_offset).limit(actual_limit).all()
+    return query.offset(offset).limit(limit).all()
 
 @router.get("/{candidate_id}", response_model=CandidateInDB)
 def read_candidate(candidate_id: int, db: Session = Depends(get_db)):

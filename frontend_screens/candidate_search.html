@@ -278,12 +278,16 @@
 <label class="font-label-sm text-on-surface-variant uppercase tracking-widest text-[10px] block">Location Type</label>
 <div class="space-y-2">
 <label class="flex items-center gap-3 cursor-pointer group">
-<input checked="" class="rounded border-white/20 bg-transparent text-primary focus:ring-primary" type="checkbox"/>
-<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Remote Global</span>
+<input class="rounded border-white/20 bg-transparent text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Remote</span>
 </label>
 <label class="flex items-center gap-3 cursor-pointer group">
 <input class="rounded border-white/20 bg-transparent text-primary focus:ring-primary" type="checkbox"/>
-<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Hybrid / On-site</span>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Hybrid</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-white/20 bg-transparent text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-on-surface group-hover:text-primary transition-colors">Onsite</span>
 </label>
 </div>
 </div>
@@ -301,272 +305,13 @@
 <!-- RIGHT CONTENT: CANDIDATE GRID -->
 <section class="col-span-9">
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter" id="candidates-grid">
-<!-- Candidate Card 1 -->
-<div class="glass-card rounded-2xl p-6 group hover:translate-y-[-4px] transition-all duration-500 ai-glow">
-<div class="flex justify-between items-start mb-6">
-<div class="relative">
-<img alt="Candidate profile" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlDpfOb7G1WGAUGOZd1haDiENbgFUZ6zmvJwTjxdwReVHlS4JrWUCSi8Emh7OnAK1tu0O-wkQ8_-lHzky4JwDc_Yy6lbbzYibLP4stLl47NbMHN7B83QcgljZQYvAux4ANXCstZDR9WC4wWC2J5L46yVeaCJACMkfNBZLx8JbwxJIH-h6-kM52v_-IJPsh-p1zXTGs839rNZmFhdmfjIWVt_H1wGfxKBae3FgpwpsN2Ads7IvUKZ04tLj4TiZ5eFQfm0pzaJUOaku9"/>
-<div class="absolute -bottom-1 -right-1 bg-tertiary-container w-6 h-6 rounded-full flex items-center justify-center border-2 border-background">
-<span class="material-symbols-outlined text-[14px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-</div>
-<div class="text-right">
-<div class="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 relative">
-<span class="font-mono-data text-primary font-bold text-xs">98%</span>
-<svg class="absolute inset-0 w-full h-full -rotate-90">
-<circle class="text-primary" cx="24" cy="24" fill="none" r="22" stroke="currentColor" stroke-dasharray="138" stroke-dashoffset="3" stroke-width="2"></circle>
-</svg>
-</div>
-<p class="font-label-sm text-primary text-[10px] mt-1">AI MATCH</p>
-</div>
-</div>
-<div class="mb-6">
-<h4 class="font-headline-md text-on-surface group-hover:text-primary transition-colors">Julian Pierce</h4>
-<p class="text-on-surface-variant/70 font-body-md">Senior Systems Architect</p>
-<div class="flex items-center gap-2 mt-2 text-on-surface-variant/50 font-label-sm">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span>San Francisco, CA</span>
-</div>
-</div>
-<div class="space-y-4">
-<div class="flex flex-wrap gap-2">
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Rust</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Distributed Systems</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">K8s</span>
-</div>
-<div class="h-[1px] bg-white/10"></div>
-<div class="flex items-center justify-between">
-<div class="text-xs">
-<p class="text-on-surface-variant/50">Exp.</p>
-<p class="text-on-surface font-bold">12 Years</p>
-</div>
-<button class="bg-primary/10 text-primary hover:bg-primary hover:text-on-primary px-4 py-2 rounded-lg font-label-sm transition-all active:scale-95">View Profile</button>
-</div>
-</div>
-</div>
-<!-- Candidate Card 2 -->
-<div class="glass-card rounded-2xl p-6 group hover:translate-y-[-4px] transition-all duration-500">
-<div class="flex justify-between items-start mb-6">
-<div class="relative">
-<img alt="Candidate profile" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/5 group-hover:border-secondary/50 transition-colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa4Pbb1M3kgaTiJaZGrqwfxJ0C3DqvQBqerI8Sc3JRWXinU9LNsTgXqiN0FFjR3FvfS2F0diYzZN5ElmUd49tFYfBpy1ZJEgwmwAP7sR2EFsIe_2jTkPTXOEMzxs8pVUB7HoS3AaK7vQht2pqovRuyWTP4GAe81OT3_PgXDJBzyqv_byV2W72lpuvga5iQPKfdEmN27gmeHXebgidVUxO5HjiByVJp2tZi8Px02KXp1Z6bweCNqr8OtfPquF7r02fRUCVaST5M7oKE"/>
-</div>
-<div class="text-right">
-<div class="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-white/10 relative">
-<span class="font-mono-data text-on-surface font-bold text-xs">89%</span>
-<svg class="absolute inset-0 w-full h-full -rotate-90">
-<circle class="text-secondary" cx="24" cy="24" fill="none" r="22" stroke="currentColor" stroke-dasharray="138" stroke-dashoffset="20" stroke-width="2"></circle>
-</svg>
-</div>
-<p class="font-label-sm text-on-surface-variant text-[10px] mt-1">AI MATCH</p>
-</div>
-</div>
-<div class="mb-6">
-<h4 class="font-headline-md text-on-surface group-hover:text-secondary transition-colors">Elena Rodriguez</h4>
-<p class="text-on-surface-variant/70 font-body-md">Lead Data Scientist</p>
-<div class="flex items-center gap-2 mt-2 text-on-surface-variant/50 font-label-sm">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span>Remote (London)</span>
-</div>
-</div>
-<div class="space-y-4">
-<div class="flex flex-wrap gap-2">
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">PyTorch</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">NLP</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Snowflake</span>
-</div>
-<div class="h-[1px] bg-white/10"></div>
-<div class="flex items-center justify-between">
-<div class="text-xs">
-<p class="text-on-surface-variant/50">Exp.</p>
-<p class="text-on-surface font-bold">9 Years</p>
-</div>
-<button class="bg-white/5 text-on-surface hover:bg-white/10 px-4 py-2 rounded-lg font-label-sm transition-all active:scale-95">View Profile</button>
-</div>
-</div>
-</div>
-<!-- Candidate Card 3 -->
-<div class="glass-card rounded-2xl p-6 group hover:translate-y-[-4px] transition-all duration-500 ai-glow">
-<div class="flex justify-between items-start mb-6">
-<div class="relative">
-<img alt="Candidate profile" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyWG7M6LJedVPTX2HBZMwSQcjHORpGH0d-PPs19DElgm2IKMmcjoJkIy14LrIpeydAGD8wAs5VCyF_3bu5JdQ47dZjKiPb66DlTUj8zKYYD9xXvAU0mgTNQfMjAb-bc7smte16SGHcbSF_VbVkt5xvkSiRgTvkaav4jmv89YSI8paVl83hT8mq1Y2uLf0X_XtZjonzi28fczcXtM1EEscvvhMnY4_6ckUUtCiM8ZNlOU6vvVMsFS2ltNFYwL0IqCPO8B7uzBHVlD5T"/>
-<div class="absolute -bottom-1 -right-1 bg-tertiary-container w-6 h-6 rounded-full flex items-center justify-center border-2 border-background">
-<span class="material-symbols-outlined text-[14px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-</div>
-<div class="text-right">
-<div class="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 relative">
-<span class="font-mono-data text-primary font-bold text-xs">94%</span>
-<svg class="absolute inset-0 w-full h-full -rotate-90">
-<circle class="text-primary" cx="24" cy="24" fill="none" r="22" stroke="currentColor" stroke-dasharray="138" stroke-dashoffset="10" stroke-width="2"></circle>
-</svg>
-</div>
-<p class="font-label-sm text-primary text-[10px] mt-1">AI MATCH</p>
-</div>
-</div>
-<div class="mb-6">
-<h4 class="font-headline-md text-on-surface group-hover:text-primary transition-colors">Marcus Weber</h4>
-<p class="text-on-surface-variant/70 font-body-md">Principal Product Manager</p>
-<div class="flex items-center gap-2 mt-2 text-on-surface-variant/50 font-label-sm">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span>Berlin, DE</span>
-</div>
-</div>
-<div class="space-y-4">
-<div class="flex flex-wrap gap-2">
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">B2B SaaS</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Technical PM</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">AI Ethics</span>
-</div>
-<div class="h-[1px] bg-white/10"></div>
-<div class="flex items-center justify-between">
-<div class="text-xs">
-<p class="text-on-surface-variant/50">Exp.</p>
-<p class="text-on-surface font-bold">15 Years</p>
-</div>
-<button class="bg-primary/10 text-primary hover:bg-primary hover:text-on-primary px-4 py-2 rounded-lg font-label-sm transition-all active:scale-95">View Profile</button>
-</div>
-</div>
-</div>
-<!-- Candidate Card 4 -->
-<div class="glass-card rounded-2xl p-6 group hover:translate-y-[-4px] transition-all duration-500">
-<div class="flex justify-between items-start mb-6">
-<div class="relative">
-<img alt="Candidate profile" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/5 group-hover:border-secondary/50 transition-colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPH77Ndw3Ff24J5aOlkRMWZpGKKihhzUjBK6VU38UgAsPo0X_BW-F8u2zRYnYQAKo7usKS_OGPyZjeKXiT59HSVtOb1CcSaORmbp8CZyzl7o1yNkcNve0elJ_z7KhGR7lnw66OFMfEx4D82b4LIJqBc6vRi17eNH-anqlurEqBjA9iGnin4XArHZvSHtcL7bljr89UW_SICdN7cifYnyR4gRkhn5MyT0PdfjIjDAU8wiWQXz9w1i34W2TYz1GO8f60JvXH1-yz0S4G"/>
-</div>
-<div class="text-right">
-<div class="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-white/10 relative">
-<span class="font-mono-data text-on-surface font-bold text-xs">84%</span>
-<svg class="absolute inset-0 w-full h-full -rotate-90">
-<circle class="text-secondary/50" cx="24" cy="24" fill="none" r="22" stroke="currentColor" stroke-dasharray="138" stroke-dashoffset="25" stroke-width="2"></circle>
-</svg>
-</div>
-<p class="font-label-sm text-on-surface-variant text-[10px] mt-1">AI MATCH</p>
-</div>
-</div>
-<div class="mb-6">
-<h4 class="font-headline-md text-on-surface group-hover:text-secondary transition-colors">Sonia O'Neill</h4>
-<p class="text-on-surface-variant/70 font-body-md">Full Stack Developer</p>
-<div class="flex items-center gap-2 mt-2 text-on-surface-variant/50 font-label-sm">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span>Dublin, IE</span>
-</div>
-</div>
-<div class="space-y-4">
-<div class="flex flex-wrap gap-2">
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Next.js</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Prisma</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Tailwind</span>
-</div>
-<div class="h-[1px] bg-white/10"></div>
-<div class="flex items-center justify-between">
-<div class="text-xs">
-<p class="text-on-surface-variant/50">Exp.</p>
-<p class="text-on-surface font-bold">5 Years</p>
-</div>
-<button class="bg-white/5 text-on-surface hover:bg-white/10 px-4 py-2 rounded-lg font-label-sm transition-all active:scale-95">View Profile</button>
-</div>
-</div>
-</div>
-<!-- Candidate Card 5 -->
-<div class="glass-card rounded-2xl p-6 group hover:translate-y-[-4px] transition-all duration-500">
-<div class="flex justify-between items-start mb-6">
-<div class="relative">
-<img alt="Candidate profile" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/5 group-hover:border-secondary/50 transition-colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO2KsKpNzTJkdIoRdJb-Wuqge3BUTWvKKk9ilUrLqM4FSDDd6rccZ7ppFPoKM8USDiZd5_RwZLcGM15WRD3zWpGbfdJCNT_Arx_KDANPvj5a8DUyuyMrGN2zc_F5uj0THQR-UFWmaPvvBqjGkz7A8qz98ez09Nl3TytVIFxdsUCXtKrJsOIb4AtmTZq6sIXWQsK3Q4EbhbNeaH1tS8kEoolm89eobL93lScdcxGX7A6TqtQr2GseZZmBp9KHnQmcWK1poBnvxhJ46k"/>
-</div>
-<div class="text-right">
-<div class="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-white/10 relative">
-<span class="font-mono-data text-on-surface font-bold text-xs">81%</span>
-<svg class="absolute inset-0 w-full h-full -rotate-90">
-<circle class="text-secondary/30" cx="24" cy="24" fill="none" r="22" stroke="currentColor" stroke-dasharray="138" stroke-dashoffset="35" stroke-width="2"></circle>
-</svg>
-</div>
-<p class="font-label-sm text-on-surface-variant text-[10px] mt-1">AI MATCH</p>
-</div>
-</div>
-<div class="mb-6">
-<h4 class="font-headline-md text-on-surface group-hover:text-secondary transition-colors">Thomas Hwang</h4>
-<p class="text-on-surface-variant/70 font-body-md">DevOps Engineer</p>
-<div class="flex items-center gap-2 mt-2 text-on-surface-variant/50 font-label-sm">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span>Seoul, KR</span>
-</div>
-</div>
-<div class="space-y-4">
-<div class="flex flex-wrap gap-2">
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Terraform</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Docker</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">CI/CD</span>
-</div>
-<div class="h-[1px] bg-white/10"></div>
-<div class="flex items-center justify-between">
-<div class="text-xs">
-<p class="text-on-surface-variant/50">Exp.</p>
-<p class="text-on-surface font-bold">7 Years</p>
-</div>
-<button class="bg-white/5 text-on-surface hover:bg-white/10 px-4 py-2 rounded-lg font-label-sm transition-all active:scale-95">View Profile</button>
-</div>
-</div>
-</div>
-<!-- Candidate Card 6 -->
-<div class="glass-card rounded-2xl p-6 group hover:translate-y-[-4px] transition-all duration-500 ai-glow">
-<div class="flex justify-between items-start mb-6">
-<div class="relative">
-<img alt="Candidate profile" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUoaM0DV6CFZwr3tos03yhJL2shxV_I3lpzF9XtXBHvjSKPZa2-WXj1MEFdCFUb2lAUVmz9x8kBEso4PbtiYgJMcYuW32M-nMhes98kdP9zJARONBdyOTsUhIWpJ2KVbdG7_a0eax8Y450v9sbgQV7fDEdRhEWD5nfPSr7HSdqzS4LZ-9uZLZakHN8S9PcjBAVH238gEis55kv0UluuwjKbM6VpTRwtBKdLk9zGS9YM7kHREfVd10RFm4SfyMr9rUrY2aly-7NPxa_"/>
-<div class="absolute -bottom-1 -right-1 bg-tertiary-container w-6 h-6 rounded-full flex items-center justify-center border-2 border-background">
-<span class="material-symbols-outlined text-[14px] text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-</div>
-<div class="text-right">
-<div class="inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-primary/20 relative">
-<span class="font-mono-data text-primary font-bold text-xs">92%</span>
-<svg class="absolute inset-0 w-full h-full -rotate-90">
-<circle class="text-primary" cx="24" cy="24" fill="none" r="22" stroke="currentColor" stroke-dasharray="138" stroke-dashoffset="12" stroke-width="2"></circle>
-</svg>
-</div>
-<p class="font-label-sm text-primary text-[10px] mt-1">AI MATCH</p>
-</div>
-</div>
-<div class="mb-6">
-<h4 class="font-headline-md text-on-surface group-hover:text-primary transition-colors">Lila Ames</h4>
-<p class="text-on-surface-variant/70 font-body-md">UX Design Lead</p>
-<div class="flex items-center gap-2 mt-2 text-on-surface-variant/50 font-label-sm">
-<span class="material-symbols-outlined text-sm">location_on</span>
-<span>New York, NY</span>
-</div>
-</div>
-<div class="space-y-4">
-<div class="flex flex-wrap gap-2">
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Design Ops</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">Prototyping</span>
-<span class="px-2 py-0.5 bg-white/5 border border-white/10 rounded font-mono-data text-[11px] text-on-surface-variant">A11y</span>
-</div>
-<div class="h-[1px] bg-white/10"></div>
-<div class="flex items-center justify-between">
-<div class="text-xs">
-<p class="text-on-surface-variant/50">Exp.</p>
-<p class="text-on-surface font-bold">11 Years</p>
-</div>
-<button class="bg-primary/10 text-primary hover:bg-primary hover:text-on-primary px-4 py-2 rounded-lg font-label-sm transition-all active:scale-95">View Profile</button>
-</div>
-</div>
+<div class="col-span-full py-16 text-center text-outline">
+<span class="material-symbols-outlined animate-spin text-4xl mb-2">sync</span>
+<p>Searching candidate database...</p>
 </div>
 </div>
 <!-- Pagination -->
-<div class="mt-12 flex items-center justify-center gap-4" id="pagination-container">
-<button class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 disabled:opacity-30" disabled="">
-<span class="material-symbols-outlined">chevron_left</span>
-</button>
-<div class="flex gap-2">
-<button class="w-10 h-10 rounded-full bg-primary text-on-primary font-mono-data">1</button>
-<button class="w-10 h-10 rounded-full hover:bg-white/5 text-on-surface-variant font-mono-data">2</button>
-<button class="w-10 h-10 rounded-full hover:bg-white/5 text-on-surface-variant font-mono-data">3</button>
-<span class="w-10 h-10 flex items-center justify-center text-on-surface-variant">...</span>
-<button class="w-10 h-10 rounded-full hover:bg-white/5 text-on-surface-variant font-mono-data">12</button>
-</div>
-<button class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5">
-<span class="material-symbols-outlined">chevron_right</span>
-</button>
-</div>
+<div class="mt-12 flex items-center justify-center gap-4" id="pagination-container"></div>
 </section>
 </div>
 </div>
@@ -582,18 +327,18 @@
 <span class="material-symbols-outlined">close</span>
 </button>
 </div>
-<div class="p-5 max-h-96 overflow-y-auto custom-scrollbar space-y-4">
+<div class="p-5 max-h-96 overflow-y-auto custom-scrollbar space-y-4" id="copilot-panel-body">
 <div class="bg-surface-container/50 p-3 rounded-lg border border-white/5">
-<p class="text-xs leading-relaxed">I've analyzed <span class="text-primary font-bold">1,248 profiles</span> for the 'Senior Architect' role. Julian Pierce is currently your strongest lead based on technical stack overlap.</p>
+<p class="text-xs leading-relaxed" id="copilot-summary-text"><span class="inline-block w-3 h-3 rounded-full bg-primary animate-pulse mr-1"></span>Loading candidate intelligence...</p>
 </div>
 <div class="space-y-2">
 <p class="font-label-sm text-[10px] text-on-surface-variant uppercase">Suggested Actions</p>
-<button class="w-full text-left p-2 rounded bg-white/5 hover:bg-white/10 text-xs border border-white/5 transition-colors flex items-center justify-between">
-<span>Draft outreach to Julian</span>
-<span class="material-symbols-outlined text-sm">mail</span>
+<button class="w-full text-left p-2 rounded bg-white/5 hover:bg-white/10 text-xs border border-white/5 transition-colors flex items-center justify-between" onclick="window.location.href='candidate_ranking.html'">
+<span>View ranked candidates</span>
+<span class="material-symbols-outlined text-sm">leaderboard</span>
 </button>
-<button class="w-full text-left p-2 rounded bg-white/5 hover:bg-white/10 text-xs border border-white/5 transition-colors flex items-center justify-between">
-<span>Compare top 3 matches</span>
+<button class="w-full text-left p-2 rounded bg-white/5 hover:bg-white/10 text-xs border border-white/5 transition-colors flex items-center justify-between" onclick="window.location.href='candidate_comparison.html'">
+<span>Compare top candidates</span>
 <span class="material-symbols-outlined text-sm">compare</span>
 </button>
 </div>

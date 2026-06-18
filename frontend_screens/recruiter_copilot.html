@@ -153,29 +153,29 @@
 </div>
 </div>
 <nav class="flex-1 space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="index.html">
 <span class="material-symbols-outlined">dashboard</span>
 <span class="font-body-md">Dashboard</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="candidate_search.html">
 <span class="material-symbols-outlined">person_search</span>
 <span class="font-body-md">Candidate Search</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="candidate_ranking.html">
 <span class="material-symbols-outlined">leaderboard</span>
 <span class="font-body-md">Ranking</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-primary dark:text-primary-fixed font-bold border-r-2 border-primary bg-primary/5" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-primary dark:text-primary-fixed font-bold border-r-2 border-primary bg-primary/5" href="recruiter_copilot.html">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
 <span class="font-body-md">Recruiter Copilot</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="candidate_comparison.html">
 <span class="material-symbols-outlined">description</span>
-<span class="font-body-md">Details</span>
+<span class="font-body-md">Comparison</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="#">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant/70 dark:text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all duration-300" href="skill_gap_analysis.html">
 <span class="material-symbols-outlined">settings</span>
-<span class="font-body-md">Settings</span>
+<span class="font-body-md">Skill Gap</span>
 </a>
 </nav>
 <div class="mt-auto">
@@ -217,14 +217,29 @@
 <!-- Context Panel (Left) -->
 <section class="w-1/2 h-full p-gutter overflow-y-auto custom-scrollbar">
 <div class="space-y-6">
+<!-- Context Dropdowns -->
+<div class="grid grid-cols-2 gap-4 bg-surface-container/30 p-4 rounded-2xl border border-white/5">
+    <div class="flex flex-col gap-1.5">
+        <label for="context-candidate" class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Select Candidate</label>
+        <select id="context-candidate" class="w-full bg-surface-container border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+            <option value="">-- Loading Candidates --</option>
+        </select>
+    </div>
+    <div class="flex flex-col gap-1.5">
+        <label for="context-job" class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Target Job Role</label>
+        <select id="context-job" class="w-full bg-surface-container border border-white/10 rounded-xl px-4 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+            <option value="">-- Loading Jobs --</option>
+        </select>
+    </div>
+</div>
 <!-- Section Header -->
 <div class="flex justify-between items-start">
 <div>
 <span class="inline-block px-3 py-1 rounded-full bg-tertiary/10 text-tertiary text-label-sm mb-2 border border-tertiary/20">Current Context: Candidate</span>
-<h2 class="font-headline-lg text-headline-lg text-white">Elena Rodriguez</h2>
-<p class="text-on-surface-variant font-body-md">Senior Frontend Engineer • 8 Years Exp.</p>
+<h2 id="copilot-candidate-name" class="font-headline-lg text-headline-lg text-white">Elena Rodriguez</h2>
+<p id="copilot-candidate-title-exp" class="text-on-surface-variant font-body-md">Senior Frontend Engineer • 8 Years Exp.</p>
 </div>
-<button class="glass-panel px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-white/5 transition-colors">
+<button id="copilot-view-profile-btn" class="glass-panel px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-white/5 transition-colors">
 <span class="material-symbols-outlined text-primary">open_in_new</span>
 <span class="font-label-sm">View Full Profile</span>
 </button>
@@ -232,15 +247,15 @@
 <!-- Bento Grid Info Cards -->
 <div class="grid grid-cols-2 gap-4">
 <div class="glass-panel p-6 rounded-2xl col-span-2 flex items-center gap-6">
-<img alt="Elena Rodriguez" class="w-24 h-24 rounded-2xl object-cover border border-white/5 shadow-lg shadow-black/40" data-alt="A high-resolution studio portrait of a professional woman with a warm, confident smile, representing a candidate named Elena Rodriguez. She is set against a dark, moody background with subtle violet and blue rim lighting, fitting the obsidian intelligence brand identity. Her attire is professional engineering-casual." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzT-u1Lw_XgEKv4z_p7A4aPmhpfGNQLxcWgadqa-Jk9MI4JaVGijmGt8MUJStVWujPeTu1DUaVtlXUBUdG68koz2ycW-ncOBdZ173GxgAaFQv7Px2qtOMO0JiepX-s7cd_Jtk731cfXBp00Vw7ipolK-lr9Yx6BgbA9NM5vcbCCXdRgjVXtC4sWy_esNO6A4JVMnxadBOlEXSSPkxRpv1nSkba8NNK0x5xiZlI0XG96eyfCB6Dn5zWiSO3D_SFkBLAw6L5RkjoFbBd"/>
+<img id="copilot-candidate-avatar" alt="Elena Rodriguez" class="w-24 h-24 rounded-2xl object-cover border border-white/5 shadow-lg shadow-black/40" data-alt="A high-resolution studio portrait of a professional woman with a warm, confident smile, representing a candidate named Elena Rodriguez. She is set against a dark, moody background with subtle violet and blue rim lighting, fitting the obsidian intelligence brand identity. Her attire is professional engineering-casual." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzT-u1Lw_XgEKv4z_p7A4aPmhpfGNQLxcWgadqa-Jk9MI4JaVGijmGt8MUJStVWujPeTu1DUaVtlXUBUdG68koz2ycW-ncOBdZ173GxgAaFQv7Px2qtOMO0JiepX-s7cd_Jtk731cfXBp00Vw7ipolK-lr9Yx6BgbA9NM5vcbCCXdRgjVXtC4sWy_esNO6A4JVMnxadBOlEXSSPkxRpv1nSkba8NNK0x5xiZlI0XG96eyfCB6Dn5zWiSO3D_SFkBLAw6L5RkjoFbBd"/>
 <div class="flex-1">
-<div class="flex flex-wrap gap-2 mb-3">
+<div id="copilot-candidate-skills" class="flex flex-wrap gap-2 mb-3">
 <span class="px-2 py-1 bg-surface-container-highest rounded-md text-label-sm text-secondary">React.js</span>
 <span class="px-2 py-1 bg-surface-container-highest rounded-md text-label-sm text-secondary">TypeScript</span>
 <span class="px-2 py-1 bg-surface-container-highest rounded-md text-label-sm text-secondary">Node.js</span>
 <span class="px-2 py-1 bg-surface-container-highest rounded-md text-label-sm text-secondary">AWS Cloud</span>
 </div>
-<p class="text-on-surface-variant font-body-md line-clamp-2 italic">"Passionate about building scalable, accessible UI architectures for fintech ecosystems..."</p>
+<p id="copilot-candidate-bio" class="text-on-surface-variant font-body-md line-clamp-2 italic">"Passionate about building scalable, accessible UI architectures for fintech ecosystems..."</p>
 </div>
 </div>
 <div class="glass-panel p-6 rounded-2xl">
@@ -248,7 +263,7 @@
 <span class="material-symbols-outlined text-primary text-sm">psychology</span>
                                 SKILL GAP ANALYSIS
                             </h3>
-<div class="space-y-4">
+<div id="copilot-skill-gap-container" class="space-y-4">
 <div class="space-y-1">
 <div class="flex justify-between text-label-sm">
 <span>System Design</span>
@@ -275,10 +290,10 @@
                                 MARKET BENCHMARK
                             </h3>
 <div class="flex items-end gap-2">
-<span class="font-headline-md text-headline-md text-white">$165k</span>
-<span class="text-label-sm text-tertiary mb-1">+12% vs. Market</span>
+<span id="copilot-salary-expectation" class="font-headline-md text-headline-md text-white">$165k</span>
+<span id="copilot-salary-vs-market" class="text-label-sm text-tertiary mb-1">+12% vs. Market</span>
 </div>
-<p class="text-[10px] text-on-surface-variant mt-2 uppercase tracking-widest">San Francisco, CA</p>
+<p id="copilot-location" class="text-[10px] text-on-surface-variant mt-2 uppercase tracking-widest">San Francisco, CA</p>
 </div>
 <!-- Resume Summary Card -->
 <div class="glass-panel p-6 rounded-2xl col-span-2">
@@ -286,7 +301,7 @@
 <span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
                                 AI RESUME SUMMARY
                             </h3>
-<ul class="space-y-3">
+<ul id="copilot-resume-summary" class="space-y-3">
 <li class="flex gap-3">
 <span class="material-symbols-outlined text-primary text-body-md">check_circle</span>
 <span class="font-body-md">Spearheaded the migration of 4 legacy projects to micro-frontend architecture at NexaFin.</span>
@@ -319,65 +334,19 @@
 <span class="font-label-sm text-tertiary">Active Analysis</span>
 </div>
 </div>
-<!-- Chat Messages -->
-<div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-<!-- AI Message -->
-<div class="flex gap-4">
-<div class="w-10 h-10 shrink-0 rounded-full bg-secondary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-white">smart_toy</span>
-</div>
-<div class="space-y-3 max-w-[85%]">
-<div class="glass-panel p-4 rounded-2xl rounded-tl-none">
-<p class="font-body-md leading-relaxed">I've finished analyzing Elena's profile. She's a <span class="text-secondary font-bold">94% match</span> for the Staff Engineer opening. Her recent work with distributed UI systems aligns perfectly with your requirements.</p>
-<p class="font-body-md mt-2">Would you like me to draft an outreach email or generate a technical screening guide?</p>
-</div>
-<div class="flex flex-wrap gap-2">
-<button class="px-4 py-2 bg-primary-container/20 border border-primary/30 rounded-full text-label-sm hover:bg-primary-container/40 transition-colors flex items-center gap-2 group">
-<span class="material-symbols-outlined text-primary text-sm">mail</span>
-                                    Generate outreach email
-                                    <span class="material-symbols-outlined text-xs opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
-</button>
-<button class="px-4 py-2 bg-surface-container-highest border border-white/10 rounded-full text-label-sm hover:bg-white/5 transition-colors flex items-center gap-2 group">
-<span class="material-symbols-outlined text-secondary text-sm">assignment_turned_in</span>
-                                    Summarize resume
-                                    <span class="material-symbols-outlined text-xs opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
-</button>
-</div>
-</div>
-</div>
-<!-- User Message -->
-<div class="flex gap-4 justify-end">
-<div class="space-y-2 max-w-[85%]">
-<div class="bg-primary-container p-4 rounded-2xl rounded-tr-none text-white shadow-xl shadow-primary/20">
-<p class="font-body-md">Let's go with the outreach email. Make it sound professional yet innovative. Mention her recent blog post on Micro-frontends.</p>
-</div>
-</div>
-<img alt="User Avatar" class="w-10 h-10 rounded-full border border-primary/20 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTDPrbZ6ZC2hqEwnwqNr01ufedGYyGNHeEgy3ezdhiRvGslJsCL1RRtl8Ml3yUUCnxevRXUqol-_oFYrQh-eC871OUsQ8rrL-C9SAV3ZqQ2x2-__IiHN3QlRreZSeCIEdYlcs-kxLAwJ-hofLn-Skybgr8Vh8R5R1fxrLY-U6ciZJPci3QaKGhicQhfmDfmRzYtrYXDWcW4Xvk7mhJvajlPlDIZvMd499_Iv79dx5ENmswsOE3yDs-z4VJ_PoHbOtqSAobpgTL7xp-"/>
-</div>
-<!-- AI Response Loading / Animation -->
-<div class="flex gap-4">
-<div class="w-10 h-10 shrink-0 rounded-full bg-secondary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-white">smart_toy</span>
-</div>
-<div class="glass-panel p-4 rounded-2xl rounded-tl-none italic text-on-surface-variant flex items-center gap-3">
-<div class="flex gap-1">
-<div class="w-1 h-1 bg-primary rounded-full animate-bounce" style="animation-delay: 0s"></div>
-<div class="w-1 h-1 bg-primary rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-<div class="w-1 h-1 bg-primary rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-</div>
-                            Generating personalized draft...
-                        </div>
-</div>
+<!-- Chat Messages - populated dynamically by initRecruiterCopilot() -->
+<div id="chat-stream" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+<div class="text-xs text-on-surface-variant/50 text-center py-4">Initializing Copilot...</div>
 </div>
 <!-- Input Area -->
 <div class="p-6 bg-surface-container-lowest/80 border-t border-white/10">
 <div class="relative">
-<textarea class="w-full bg-surface-container-highest/50 border border-white/5 rounded-2xl p-4 pr-16 text-body-md focus:ring-1 focus:ring-primary min-h-[100px] resize-none" placeholder="Ask Copilot anything about the candidate or job..."></textarea>
+<textarea id="copilot-input" class="w-full bg-surface-container-highest/50 border border-white/5 rounded-2xl p-4 pr-16 text-body-md focus:ring-1 focus:ring-primary min-h-[100px] resize-none" placeholder="Ask Copilot anything about the candidate or job..."></textarea>
 <div class="absolute right-4 bottom-4 flex gap-2">
 <button class="p-2 hover:bg-white/5 rounded-lg transition-colors text-on-surface-variant">
 <span class="material-symbols-outlined">attach_file</span>
 </button>
-<button class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shadow-lg shadow-primary/30 active:scale-90 transition-transform">
+<button id="copilot-send-btn" class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shadow-lg shadow-primary/30 active:scale-90 transition-transform">
 <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
 </button>
 </div>

@@ -241,7 +241,7 @@
 <div class="relative w-48 h-48 flex items-center justify-center mb-6">
 <svg class="w-full h-full -rotate-90">
 <circle cx="96" cy="96" fill="none" r="88" stroke="rgba(255,255,255,0.05)" stroke-width="12"></circle>
-<circle cx="96" cy="96" fill="none" r="88" stroke="url(#gradientScore)" stroke-dasharray="553" stroke-dashoffset="138" stroke-linecap="round" stroke-width="12"></circle>
+<circle id="score-circle-progress" cx="96" cy="96" fill="none" r="88" stroke="url(#gradientScore)" stroke-dasharray="553" stroke-dashoffset="138" stroke-linecap="round" stroke-width="12"></circle>
 <defs>
 <lineargradient id="gradientScore" x1="0%" x2="100%" y1="0%" y2="0%">
 <stop offset="0%" stop-color="#d2bbff"></stop>
@@ -250,12 +250,12 @@
 </defs>
 </svg>
 <div class="absolute inset-0 flex flex-col items-center justify-center">
-<span class="text-5xl font-black text-white">75%</span>
+<span id="score-text" class="text-5xl font-black text-white">75%</span>
 <span class="text-xs uppercase tracking-widest text-on-surface-variant font-bold">Match Score</span>
 </div>
 </div>
-<h3 class="font-headline-md text-headline-md mb-2">High Potential</h3>
-<p class="text-on-surface-variant text-sm px-4">Sarah shows exceptional strength in core design principles but requires bridge training in technical handoff and advanced prototyping.</p>
+<h3 id="score-title" class="font-headline-md text-headline-md mb-2">High Potential</h3>
+<p id="score-desc" class="text-on-surface-variant text-sm px-4">Sarah shows exceptional strength in core design principles but requires bridge training in technical handoff and advanced prototyping.</p>
 </div>
 <!-- Heatmap Visualization -->
 <div class="col-span-12 lg:col-span-8 glass-panel rounded-2xl p-8 glass-card-highlight">
@@ -275,7 +275,7 @@
 </div>
 </div>
 </div>
-<div class="space-y-6">
+<div id="mastery-heatmap-container" class="space-y-6">
 <!-- Skill Item -->
 <div class="group">
 <div class="flex justify-between text-sm mb-2">
@@ -328,6 +328,28 @@
 </div>
 </div>
 </div>
+<!-- Skill Alignment Columns -->
+<div class="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+    <!-- Gained / Matching Skills -->
+    <div class="glass-panel rounded-2xl p-8 glass-card-highlight">
+        <h3 class="font-headline-md text-headline-md mb-6 flex items-center gap-2 text-tertiary">
+            <span class="material-symbols-outlined text-tertiary text-2xl">check_circle</span>
+            Matching Skills
+        </h3>
+        <ul id="matching-skills-container" class="space-y-3">
+            <!-- Dynamic matching skills -->
+        </ul>
+    </div>
+    <!-- Missing Skills / Gaps -->
+    <div class="glass-panel rounded-2xl p-8 glass-card-highlight">
+        <h3 class="font-headline-md text-headline-md mb-6 flex items-center gap-2 text-error">
+            <span class="material-symbols-outlined text-error text-2xl">cancel</span>
+            Missing Skills / Gaps
+        </h3>
+        <ul id="missing-skills-container" class="space-y-3">
+            <!-- Dynamic missing skills -->
+        </ul>
+    </div>
 </div>
 <!-- AI Recommended Upskilling -->
 <div class="col-span-12 lg:col-span-12 glass-panel rounded-2xl p-8 glass-card-highlight">
@@ -340,7 +362,7 @@
 <p class="text-xs text-on-surface-variant">Personalized training paths to bridge the 25% gap</p>
 </div>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div id="upskilling-steps" class="grid grid-cols-1 md:grid-cols-3 gap-6">
 <!-- Training Card -->
 <div class="p-6 bg-surface-container rounded-xl border border-white/5 hover:border-primary/30 transition-all cursor-pointer group">
 <div class="flex items-center justify-between mb-4">
