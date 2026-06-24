@@ -66,81 +66,122 @@ alex.chen@obsidian.network
 
     @classmethod
     def chat(cls, prompt: str, candidate_id: Optional[int], job_id: Optional[int], db: Session) -> Dict[str, Any]:
-        prompt_lower = prompt.lower()
-        response_text = ""
-        suggested_actions = []
+        import os, json, urllib.request, urllib.error, logging, time
+        logger = logging.getLogger(__name__)
         
-        # 1. Fetch Candidate/Job context
         candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first() if candidate_id else None
         job = db.query(Job).filter(Job.id == job_id).first() if job_id else None
 
-        # 2. Match intent: Outreach email drafting
-        if "draft" in prompt_lower or "email" in prompt_lower or "outreach" in prompt_lower:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            logger.warning("GROQ_API_KEY not set. Using Copilot fallback.")
+            return cls._fallback_chat(prompt, candidate, job)
+
+        # Build Context
+        cand_context = "No candidate selected."
+        if candidate:
+            skills = ", ".join(candidate.skills or [])
+            history = ""
+            for role in (candidate.career_history or [])[:3]:
+                history += f"- {role.get('title')} at {role.get('company')}\n"
+            cand_context = f"Candidate Name: {candidate.name}\nTitle: {candidate.title}\nExperience: {candidate.experience_years} years\nLocation: {candidate.location}\nSkills: {skills}\nCareer History:\n{history}"
+
+        job_context = "No job role selected."
+        if job:
+            reqs = ", ".join(job.required_skills or [])
+            job_context = f"Job Title: {job.title}\nDepartment: {job.department}\nLocation: {job.location}\nRequired Skills: {reqs}\nDescription: {job.description[:500]}..."
+
+        system_prompt = (
+            "You are an expert technical recruiter and AI assistant (TalentMind Recruiter Copilot). "
+            "Your task is to assist recruiters with outreach, summaries, interview questions, and gap analysis. "
+            "Respond based on the provided Candidate and Job context. Output must be structured JSON.\n\n"
+            f"--- CANDIDATE CONTEXT ---\n{cand_context}\n\n"
+            f"--- JOB CONTEXT ---\n{job_context}\n\n"
+            "INSTRUCTIONS:\n"
+            "If the user asks for an outreach email, draft it and include it in 'email_draft'.\n"
+            "If the user asks for an upskilling roadmap or gap analysis, structure a 2-3 step roadmap in 'roadmap'.\n"
+            "Otherwise, respond conversationally in 'response' using Markdown.\n"
+            "Always include 2-3 'suggested_actions' for the user to take next.\n\n"
+            "JSON SCHEMA:\n"
+            "{\n"
+            '  "response": "Markdown formatted conversational response",\n'
+            '  "email_draft": "Optional string containing the email draft, or empty string",\n'
+            '  "roadmap": [ {"phase": "Phase 1", "skill": "Skill name", "estimated_duration": "2 weeks", "recommended_resources": ["link"], "hands_on_project": "project desc"} ],\n'
+            '  "suggested_actions": [ {"label": "Button text", "action": "chat", "payload": {"prompt": "Quick prompt"}} ]\n'
+            "}"
+        )
+
+        payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "response_format": {"type": "json_object"}
+        }
+
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=8) as response:
+                    res_body = response.read().decode("utf-8")
+                    data = json.loads(res_body)
+                    
+                content = data["choices"][0]["message"]["content"]
+                parsed = json.loads(content)
+                
+                return {
+                    "response": parsed.get("response", "I have processed your request."),
+                    "email_draft": parsed.get("email_draft", ""),
+                    "roadmap": parsed.get("roadmap", []),
+                    "suggested_actions": parsed.get("suggested_actions", [])
+                }
+            except Exception as e:
+                logger.error(f"Groq Copilot API error (attempt {attempt+1}): {e}")
+                if attempt == max_retries - 1:
+                    return cls._fallback_chat(prompt, candidate, job)
+                time.sleep(1.5)
+
+        return cls._fallback_chat(prompt, candidate, job)
+
+    @classmethod
+    def _fallback_chat(cls, prompt: str, candidate: Optional[Candidate], job: Optional[Job]) -> Dict[str, Any]:
+        prompt_lower = prompt.lower()
+        response_text = ""
+        suggested_actions = []
+        email = ""
+        roadmap = []
+
+        if "draft" in prompt_lower or "email" in prompt_lower:
             if candidate and job:
                 email = cls.generate_outreach_email(candidate, job)
-                response_text = f"I've successfully generated a custom outreach email for **{candidate.name}** for the **{job.title}** role. You can edit the template below:"
-                suggested_actions = [
-                    {"label": "Send Email", "action": "send_email", "payload": {"candidate_id": candidate.id, "email": email}},
-                    {"label": "Regenerate Email", "action": "chat", "payload": {"prompt": "Regenerate email with a more casual tone"}}
-                ]
-                return {
-                    "response": response_text,
-                    "email_draft": email,
-                    "suggested_actions": suggested_actions
-                }
+                response_text = f"I've generated a custom outreach email for **{candidate.name}** for the **{job.title}** role."
+                suggested_actions = [{"label": "Send Email", "action": "send_email", "payload": {"candidate_id": candidate.id, "email": email}}]
             elif candidate:
-                response_text = f"I can draft an email for **{candidate.name}**, but please select a job role context first so I can align the pitch."
-                return {"response": response_text, "suggested_actions": []}
+                response_text = "Please select a job role context first so I can align the pitch."
             else:
-                response_text = "Who would you like me to draft an outreach email for? Please select a candidate profile first."
-                return {"response": response_text, "suggested_actions": []}
-
-        # 3. Match intent: Upskilling Roadmap
-        elif "roadmap" in prompt_lower or "upskill" in prompt_lower or "gap" in prompt_lower:
+                response_text = "Who would you like me to draft an outreach email for? Please select a candidate."
+        elif "roadmap" in prompt_lower or "gap" in prompt_lower:
             if candidate and job:
                 roadmap = cls.generate_roadmap(candidate, job)
-                response_text = f"Here is the strategic upskilling roadmap for **{candidate.name}** to bridge their gaps for the **{job.title}** role. This focuses on learning key missing skills: {', '.join([r['skill'] for r in roadmap])}."
-                suggested_actions = [
-                    {"label": "Export Roadmap", "action": "export_roadmap", "payload": {"candidate_id": candidate.id, "roadmap": roadmap}},
-                    {"label": "Share with Candidate", "action": "share_roadmap", "payload": {"candidate_id": candidate.id}}
-                ]
-                return {
-                    "response": response_text,
-                    "roadmap": roadmap,
-                    "suggested_actions": suggested_actions
-                }
-            elif candidate:
-                response_text = f"I can build an upskilling roadmap for **{candidate.name}**, but please specify which Job Description you are matching them against."
-                return {"response": response_text, "suggested_actions": []}
+                response_text = f"Here is the upskilling roadmap for **{candidate.name}** to match the **{job.title}** role."
             else:
-                response_text = "Please select a candidate to generate their customized upskilling roadmap."
-                return {"response": response_text, "suggested_actions": []}
-
-        # 4. Contextual Q&A
-        elif "hello" in prompt_lower or "hi" in prompt_lower:
-            response_text = "Hello! I am your TalentMind Recruiter Copilot. I can assist you with candidate matching, drafting outreach emails, analyzing skill gaps, and generating upskilling roadmaps. How can I help you today?"
-            suggested_actions = [
-                {"label": "Rank Candidates", "action": "rank_candidates", "payload": {}},
-                {"label": "Analyze Skill Gaps", "action": "skill_gap", "payload": {}}
-            ]
-        elif candidate:
-            response_text = (
-                f"Checking files for candidate **{candidate.name}** ({candidate.title}). "
-                f"They currently possess {len(candidate.skills)} skills, including {', '.join(candidate.skills[:4])}. "
-                f"Their status is currently set to **{candidate.status}**. "
-                f"How would you like me to assist with this candidate?"
-            )
-            suggested_actions = [
-                {"label": "Draft Outreach Email", "action": "chat", "payload": {"prompt": f"Draft outreach email for {candidate.name}"}},
-                {"label": "Skill Gap Analysis", "action": "skill_gap", "payload": {"candidate_id": candidate.id}}
-            ]
+                response_text = "Please select a candidate and job to generate a roadmap."
         else:
-            response_text = "I'm ready. Select a candidate or a job role from your dashboard, and I can generate candidate summaries, compare candidates, or draft outreach templates."
-            suggested_actions = [
-                {"label": "Show Top Ranked", "action": "show_rankings", "payload": {}}
-            ]
-
+            response_text = "Hello! I am your Recruiter Copilot (Fallback Mode). How can I help you today?"
+            
         return {
             "response": response_text,
+            "email_draft": email,
+            "roadmap": roadmap,
             "suggested_actions": suggested_actions
         }

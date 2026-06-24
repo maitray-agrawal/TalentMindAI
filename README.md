@@ -122,35 +122,40 @@ TalentMindAI/
 
 ### 1. Backend Setup & Installation
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Create and activate a Python virtual environment:
+1. From the project root directory, create and activate a Python virtual environment:
    ```bash
    python -m venv venv
    # On Windows:
-   .\venv\Scripts\activate
+   .\venv\Scripts\Activate.ps1
    # On macOS/Linux:
    source venv/bin/activate
    ```
 
-3. Install the dependencies listed in the root `requirements.txt`:
+2. Install the required dependencies:
    ```bash
-   pip install -r ../requirements.txt
+   pip install -r requirements.txt
    ```
 
-4. Seed the SQLite database with mockup candidates and roles:
-   ```bash commands
-   python -m app.seed
+3. Set your Groq API Key (required for AI Reranking and Copilot):
+   ```bash
+   # On Windows PowerShell:
+   $env:GROQ_API_KEY="your-groq-api-key"
+   # On macOS/Linux:
+   export GROQ_API_KEY="your-groq-api-key"
    ```
 
-5. Run the FastAPI development server:
-   ```bash command
-   uvicorn app.main:app --reload
+4. Navigate to the backend directory and start the FastAPI server:
+   ```bash
+   cd backend
+   uvicorn app.main:app --reload --port 8000
    ```
-   The backend API will run at `http://127.0.0.1:8000` (interactive docs available at `/docs`).
+   *The backend API will now run at `http://127.0.0.1:8000` (interactive docs available at `/docs`).*
+
+### 2. Frontend Setup
+
+The frontend is built with vanilla HTML/JS and TailwindCSS. It does not require a build step.
+1. Simply open `frontend_screens/dashboard.html` in your web browser.
+2. Alternatively, use a tool like VS Code Live Server to serve the `frontend_screens` directory.
 
 ### 2. Generate Submission Output
 To compile, sort, and export the top 100 candidates based on the parsed job description in `extracted_jd.txt`:

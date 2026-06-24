@@ -1598,11 +1598,21 @@ async function updateCopilotLeftPanel(candidateId, jobId) {
         if (titleEl) titleEl.textContent = `${candidate.title} • ${candidate.experience_years} Years Exp.`;
 
         // 2. Avatar
-        const avatarEl = document.getElementById('copilot-candidate-avatar');
+        let avatarEl = document.getElementById('copilot-candidate-avatar');
         if (avatarEl) {
+            if (avatarEl.tagName === 'DIV') {
+                const img = document.createElement('img');
+                img.id = 'copilot-candidate-avatar';
+                img.className = 'w-24 h-24 rounded-2xl object-cover border border-white/5 shadow-lg shadow-black/40';
+                avatarEl.parentNode.replaceChild(img, avatarEl);
+                avatarEl = img;
+            }
             avatarEl.src = candidate.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDzT-u1Lw_XgEKv4z_p7A4aPmhpfGNQLxcWgadqa-Jk9MI4JaVGijmGt8MUJStVWujPeTu1DUaVtlXUBUdG68koz2ycW-ncOBdZ173GxgAaFQv7Px2qtOMO0JiepX-s7cd_Jtk731cfXBp00Vw7ipolK-lr9Yx6BgbA9NM5vcbCCXdRgjVXtC4sWy_esNO6A4JVMnxadBOlEXSSPkxRpv1nSkba8NNK0x5xiZlI0XG96eyfCB6Dn5zWiSO3D_SFkBLAw6L5RkjoFbBd';
             avatarEl.alt = candidate.name;
         }
+
+        const viewProfileBtn = document.getElementById('copilot-view-profile-btn');
+        if (viewProfileBtn) viewProfileBtn.classList.remove('hidden');
 
         // 3. Skills
         const skillsEl = document.getElementById('copilot-candidate-skills');
@@ -1674,8 +1684,7 @@ async function updateCopilotLeftPanel(candidateId, jobId) {
                     salPctEl.textContent = `${pct >= 0 ? '+' : ''}${pct}% vs. Min`;
                 }
             } else {
-                const mockExpectation = Math.round(candidate.experience_years * 10 + 90);
-                salValEl.textContent = `$${mockExpectation}k`;
+                salValEl.textContent = `N/A`;
                 if (salPctEl) salPctEl.textContent = `Market Rate`;
             }
         }
@@ -1968,6 +1977,9 @@ async function triggerCopilotChat(promptText) {
     if (inputField) inputField.disabled = true;
     if (sendBtn) sendBtn.disabled = true;
 
+    const activeAnalysis = document.getElementById('copilot-active-analysis');
+    if (activeAnalysis) activeAnalysis.classList.remove('opacity-0');
+
     // Append Typing Indicator
     const typingIndicator = document.createElement('div');
     typingIndicator.className = 'flex gap-3 justify-start items-start';
@@ -2109,6 +2121,8 @@ async function triggerCopilotChat(promptText) {
         chatStream.appendChild(errorMsg);
         chatStream.scrollTop = chatStream.scrollHeight;
     } finally {
+        const activeAnalysis = document.getElementById('copilot-active-analysis');
+        if (activeAnalysis) activeAnalysis.classList.add('opacity-0');
         if (inputField) {
             inputField.disabled = false;
             inputField.focus();
