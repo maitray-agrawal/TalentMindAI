@@ -1,0 +1,28 @@
+# Web Framework & Server
+fastapi==0.136.1
+uvicorn==0.46.0
+python-multipart==0.0.28
+python-dotenv==1.2.2
+aiofiles==25.1.0
+
+# Database & Schema Validation
+SQLAlchemy==2.0.49
+pydantic==2.13.4
+pydantic-settings==2.14.1
+
+# AI, Analytics & Matching Engine
+numpy==2.4.4
+scikit-learn==1.8.0
+scipy==1.17.1
+thefuzz==0.22.1
+pandas==3.0.3
+openpyxl==3.1.5
+
+# Templating
+Jinja2==3.1.6
+
+# Production Database (PostgreSQL)
+psycopg2-binary==2.9.10
+
+# Production Server
+gunicorn==23.0.0
