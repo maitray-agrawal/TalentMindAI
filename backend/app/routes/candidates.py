@@ -25,7 +25,9 @@ def import_candidates(
     db: Session = Depends(get_db)
 ):
     if not file_path:
-        file_path = "d:\\TalentMindAI\\dataset\\[PUB] India_runs_data_and_ai_challenge\\India_runs_data_and_ai_challenge\\candidates.jsonl"
+        # Default to a portable path relative to the backend directory
+        from app.config import BASE_DIR
+        file_path = str(BASE_DIR / "data" / "candidates.jsonl")
     try:
         result = IngestionService.ingest_candidates(db, file_path, limit, batch_size)
         return result
@@ -75,8 +77,9 @@ def get_candidate_stats(db: Session = Depends(get_db)):
     pref_counts = db.query(Candidate.work_preference, func.count(Candidate.id)).group_by(Candidate.work_preference).all()
     work_pref_dist = {pref or "Unknown": count for pref, count in pref_counts}
 
-    # Top Skills (limit to first 10000 to keep it extremely fast)
-    skills_query = db.query(Candidate.skills).limit(10000).all()
+    # Top Skills (sampled from first 5000 candidates to limit memory usage on constrained hosts)
+    # TODO: In production with PostgreSQL, use SQL-level JSON aggregation or a caching layer.
+    skills_query = db.query(Candidate.skills).limit(5000).all()
     all_skills = []
     for (skills_list,) in skills_query:
         if skills_list:
@@ -116,10 +119,11 @@ def search_candidates(
     query = db.query(Candidate)
     
     if q:
+        # Search by name and title only. Removed resume_text ILIKE to avoid
+        # full table scans on 100k+ large text records (causes timeouts on Render).
         query = query.filter(
             (Candidate.name.ilike(f"%{q}%")) | 
-            (Candidate.title.ilike(f"%{q}%")) |
-            (Candidate.resume_text.ilike(f"%{q}%"))
+            (Candidate.title.ilike(f"%{q}%"))
         )
     if location:
         query = query.filter(func.json_extract(Candidate.profile, '$.location').ilike(f"%{location}%"))
@@ -156,10 +160,10 @@ def read_candidates(
     query = db.query(Candidate)
     
     if q:
+        # Search by name and title only to avoid full table scans on resume_text
         query = query.filter(
             (Candidate.name.ilike(f"%{q}%")) | 
-            (Candidate.title.ilike(f"%{q}%")) |
-            (Candidate.resume_text.ilike(f"%{q}%"))
+            (Candidate.title.ilike(f"%{q}%"))
         )
     if status:
         query = query.filter(Candidate.status == status)

@@ -35,7 +35,7 @@ def generate_submission(
 
     # 3. If rankings are empty, calculate them dynamically
     if not rankings:
-        candidates = db.query(Candidate).all()
+        candidates = db.query(Candidate).yield_per(500).all()
         if not candidates:
             raise HTTPException(
                 status_code=400,
@@ -141,8 +141,9 @@ def generate_submission(
 
     csv_content = output.getvalue()
 
-    # 6. Write submission.csv to workspace root
-    workspace_csv_path = r"d:\TalentMindAI\submission.csv"
+    # 6. Write submission.csv to workspace root (best-effort, non-blocking)
+    from app.config import BASE_DIR
+    workspace_csv_path = str(BASE_DIR.parent / "submission.csv")
     try:
         with open(workspace_csv_path, "w", newline="", encoding="utf-8") as f:
             f.write(csv_content)

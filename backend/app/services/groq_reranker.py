@@ -83,8 +83,8 @@ class GroqReranker:
         }
 
         import time
-        # Respect rate limits (15 RPM) under sequential execution by sleeping 4 seconds
-        time.sleep(4.0)
+        # Respect rate limits with a brief delay between requests
+        time.sleep(1.0)
         max_retries = 6
         backoff = 3.0
         for attempt in range(max_retries):
@@ -92,7 +92,7 @@ class GroqReranker:
                 req_data = json.dumps(payload).encode("utf-8")
                 req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
                 
-                with urllib.request.urlopen(req, timeout=10) as response:
+                with urllib.request.urlopen(req, timeout=30) as response:
                     if response.getcode() != 200:
                         raise ValueError(f"HTTP response status code: {response.getcode()}")
                     

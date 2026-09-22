@@ -20,3 +20,9 @@ openpyxl==3.1.5
 
 # Templating
 Jinja2==3.1.6
+
+# Production Database (PostgreSQL)
+psycopg2-binary==2.9.10
+
+# Production Server
+gunicorn==23.0.0

@@ -3,7 +3,9 @@
  * Integrates Stitch UI screens with the FastAPI REST API.
  */
 
-const API_BASE = 'http://127.0.0.1:8000/api';
+// API base URL: uses relative path for Vercel rewrite proxy to Render backend.
+// For local dev, override via window.__ENV__ or set to 'http://127.0.0.1:8000/api'.
+const API_BASE = (window.__ENV__ && window.__ENV__.API_BASE) || '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Setup Global Elements (Sidebar, Header, API Indicator)

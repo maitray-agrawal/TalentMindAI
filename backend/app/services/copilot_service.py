@@ -132,7 +132,7 @@ alex.chen@obsidian.network
             try:
                 req_data = json.dumps(payload).encode("utf-8")
                 req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=8) as response:
+                with urllib.request.urlopen(req, timeout=25) as response:
                     res_body = response.read().decode("utf-8")
                     data = json.loads(res_body)
                     

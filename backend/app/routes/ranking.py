@@ -24,7 +24,7 @@ def calculate_job_rankings(job_id: int, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    candidates = db.query(Candidate).all()
+    candidates = db.query(Candidate).yield_per(500).all()
     if not candidates:
         return []
 
@@ -166,7 +166,9 @@ def generate_ranking(req: RankingGenerateRequest, db: Session = Depends(get_db))
     temp_job.education_requirements = edu_reqs
 
     # 3. Rank candidates against this job
-    candidates = db.query(Candidate).all()
+    # Limit candidates to prevent OOM on large datasets
+    max_candidates = req.limit * 10 if req.limit and req.limit > 0 else 5000
+    candidates = db.query(Candidate).limit(max_candidates).yield_per(500).all()
     if not candidates:
         return []
 
