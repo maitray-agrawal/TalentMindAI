@@ -1,12 +1,14 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "https://talentmindai-rgar.onrender.com/api/:path*"
     }
   ],
+
   "headers": [
     {
       "source": "/(.*)",
