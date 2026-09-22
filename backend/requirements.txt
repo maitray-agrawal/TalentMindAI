@@ -9,6 +9,7 @@ aiofiles==25.1.0
 SQLAlchemy==2.0.49
 pydantic==2.13.4
 pydantic-settings==2.14.1
+email-validator==2.3.0
 
 # AI, Analytics & Matching Engine
 numpy==2.4.4
